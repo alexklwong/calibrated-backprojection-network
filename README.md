@@ -34,8 +34,8 @@ If this work is useful to you, please cite our paper:
 ## Setting up your virtual environment <a name="setting-up"></a>
 We will create a virtual environment with the necessary dependencies
 ```
-virtualenv -p /usr/bin/python3.7 kbnet-py36env
-source kbnet-py36env/bin/activate
+virtualenv -p /usr/bin/python3.7 kbnet-py37env
+source kbnet-py37env/bin/activate
 pip install opencv-python scipy scikit-learn scikit-image matplotlib gdown numpy gast Pillow pyyaml
 pip install torch==1.3.0 torchvision==0.4.1 tensorboard==2.3.0
 ```
