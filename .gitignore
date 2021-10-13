@@ -1,0 +1,10 @@
+.vscode
+data
+outputs
+plots
+pretrained_models
+src/__pycache__
+tools/_jupyter/.ipynb_checkpoints
+training
+validation
+testing
