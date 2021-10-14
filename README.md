@@ -4,7 +4,7 @@ PyTorch implementation of *Unsupervised Depth Completion with Calibrated Backpro
 
 Published in ICCV 2021 (ORAL)
 
-[[publication]](https://openaccess.thecvf.com/content/ICCV2021/papers/Wong_Unsupervised_Depth_Completion_With_Calibrated_Backprojection_Layers_ICCV_2021_paper.pdf) [[arxiv]](https://arxiv.org/pdf/2108.10531.pdf) [[poster]]() [[talk]]()
+[[publication]](https://openaccess.thecvf.com/content/ICCV2021/papers/Wong_Unsupervised_Depth_Completion_With_Calibrated_Backprojection_Layers_ICCV_2021_paper.pdf) [[arxiv]](https://arxiv.org/pdf/2108.10531.pdf) [[poster]](figures/poster.pdf) [[talk]]()
 
 Model have been tested on Ubuntu 16.04, 20.04 using Python 3.5, 3.6, 3.7 PyTorch 1.2, 1.3
 
@@ -23,13 +23,69 @@ If this work is useful to you, please cite our paper:
 ```
 
 **Table of Contents**
-1. [Setting up](#setting-up)
-2. [Downloading pretrained models](#downloading-pretrained-models)
-3. [Running KBNet](#running-kbnet)
-4. [Training KBNet](#training-kbnet)
-5. [Related projects](#related-projects)
-6. [License and disclaimer](#license-disclaimer)
+1. [About sparse to dense depth completion](#about-spare-to-dense)
+2. [About Calibrated Backprojection Network](#about-calibrated-backprojection-network)
+3. [Setting up](#setting-up)
+4. [Downloading pretrained models](#downloading-pretrained-models)
+5. [Running KBNet](#running-kbnet)
+6. [Training KBNet](#training-kbnet)
+7. [Related projects](#related-projects)
+8. [License and disclaimer](#license-disclaimer)
 
+## About sparse-to-dense depth completion <a name="about-sparse-to-dense"></a>
+Given sparse point cloud and image, the goal is to infer the dense point cloud. The sparse point cloud can obtained either from computational methods such as SfM (Strcuture-from-Motion) or active sensors such as lidar or structured light sensors. Commonly, it is projected onto the image plane as a sparse depth map or 2.5D representation, in which case, methods in this domain predicts a dense depth map. Here are some examples of dense point clouds outputted by our method:
+
+
+| *Image* | *Sparse Point Cloud* | *Output Point Cloud* |
+| :-----: | :------------------: | :-----------------: |
+| <img src="figures/void_teaser_image_644.png" width="400"> | <img src="figures/void_teaser_sparse_point_cloud_644.gif" width="400"> | <img src="figures/void_teaser_kbnet_output_644.gif" width="400"> |
+| <img src="figures/void_teaser_image_306.png" width="400"> | <img src="figures/void_teaser_sparse_point_cloud_306.gif" width="400"> | <img src="figures/void_teaser_kbnet_output_306.gif" width="400"> |
+
+
+
+To follow the literature and benchmarks for this task, you may visit:
+[Awesome State of Depth Completion](https://github.com/alexklwong/awesome-state-of-depth-completion)
+
+
+## About Calibrated Backprojection Network <a name="about-calibrated-backprojection-network"></a>
+
+**The motivation:**
+
+(1) In the scene above of the copyroom and outdoor bench, the point cloud produced by XIVO is on the order of hundreds of points. When projected onto the image plane as a 2.5D range map, the sparse points cover only 0.05% of the image space -- where typically only a single measurement will be present within a local neighborhood and in most cases, none. This not only hinders learning by rendering conventional convolutions ineffective, which will produce mostly zero activations, but also increases the sensitivity of the model to the variations in the range sensor and feature detector used to produce the point cloud.
+
+(2) Typically the same sensor platform is used to collect the training set, so the model tends to overfit to the sensor setup. This is exacerbated in the unsupervised learning paradigm which leverages a photometric reconstruction loss as a supervisory signal. Because image reconstruction requires reprojection from one frame to another, this implicitly bakes in the intrinsic camera calibration parameters and limits generalization.
+
+**Our solution:**
+
+(1) To address the sparsity problem, we propose to project the point cloud onto the image plane as a sparse range map and learn a dense or quasi dense representation via a sparse to dense pooling (S2D) module. S2D performs min and max pooling with various kernel sizes to densify and capture the scene structure on multiple scales as in the figure below.
+
+<p align="center">
+    <img align="center" src="figures/sparse_to_dense_pool.png" width="600">
+</p>
+
+There exists trade-offs between detail and density (more dense, less detail) and between preservation of near and far structures (min pool biases structures close to the camera, max pool biases structures far from the camera). These trade-offs are learned by three 1 by 1 convolutional layers and the resulting multi-scale depth features are fused back into the original sparse depth map to yield a dense or quasi-dense representation.
+
+(2) To address the generalization problem, we propose to take an image, the projected sparse point cloud, and the calibration matrix as input. We introduce a calibrated backprojection layer or a KB layer that maps camera intrinsics, input image, and the imputed depth onto the 3D scene in a canonical frame of reference. This can be thought of as a form of spatial Euclidean positional encoding of the image.
+
+<p align="center">
+    <img align="center" src="figures/calibrated_backprojection_layer.png" width="600">
+</p>
+
+Calibration, therefore, can be changed depending on the camera used, allowing us to use different calibrations in training and test time, which significantly improves generalization.
+
+Our network, Calibrated Backprojection Network (KBNet), goes counter to the current trend of learning everything with generic architectures like Transformers, including what we already know about basic Euclidean geometry. Our model has strong inductive bias in our KB layer, which incorporates the calibration matrix directly into the architecture to yield an RGB representation lifted into scene topology via 3D positional encoding.
+
+<p align="center">
+    <img align="center" src="figures/calibrated_backprojection_network.png" width="800">
+</p>
+
+Not only do the design choices improve generalization across sensor platforms, by incorporating a basic geometric image formation model based on Euclidean transformations in 3D and central perspective projection onto 2D, we can reduce the model size while still achieving the state of the art.
+
+To demonstrate the effectiveness of our method, we trained a model on the [VOID][void_github] dataset, which is captured by an Intel RealSense, and tested it on [NYU v2][nyu_v2_dataset], which is collected with a Microsoft Kinect.
+
+<p align="center">
+    <img align="center" src="figures/overview_teaser.gif" width="800">
+</p>
 
 ## Setting up your virtual environment <a name="setting-up"></a>
 We will create a virtual environment with the necessary dependencies
@@ -208,26 +264,31 @@ tensorboard --logdir trained_kbnet/void1500/kbnet_model
 ## Related projects <a name="related-projects"></a>
 You may also find the following projects useful:
 
+- [ScaffNet][scaffnet_github]: *Learning Topology from Synthetic Data for Unsupervised Depth Completion*. An unsupervised sparse-to-dense depth completion method that first learns a map from sparse geometry to an initial dense topology from synthetic data (where ground truth comes for free) and amends the initial estimation by validating against the image. This work is published in the Robotics and Automation Letters (RA-L) 2021 and the International Conference on Robotics and Automation (ICRA) 2021.
+- [AdaFrame][adaframe_github]: *Learning Topology from Synthetic Data for Unsupervised Depth Completion*. An adaptive framework for learning unsupervised sparse-to-dense depth completion that balances data fidelity and regularization objectives based on model performance on the data. This work is published in the Robotics and Automation Letters (RA-L) 2021 and the International Conference on Robotics and Automation (ICRA) 2021.
 - [VOICED][voiced_github]: *Unsupervised Depth Completion from Visual Inertial Odometry*. An unsupervised sparse-to-dense depth completion method, developed by the authors. The paper introduces Scaffolding for depth completion and a light-weight network to refine it. This work is published in the Robotics and Automation Letters (RA-L) 2020 and the International Conference on Robotics and Automation (ICRA) 2020.
 - [VOID][void_github]: from *Unsupervised Depth Completion from Visual Inertial Odometry*. A dataset, developed by the authors, containing indoor and outdoor scenes with non-trivial 6 degrees of freedom. The dataset is published along with this work in the Robotics and Automation Letters (RA-L) 2020 and the International Conference on Robotics and Automation (ICRA) 2020.
 - [XIVO][xivo_github]: The Visual-Inertial Odometry system developed at UCLA Vision Lab. This work is built on top of XIVO. The VOID dataset used by this work also leverages XIVO to obtain sparse points and camera poses.
 - [GeoSup][geosup_github]: *Geo-Supervised Visual Depth Prediction*. A single image depth prediction method developed by the authors, published in the Robotics and Automation Letters (RA-L) 2019 and the International Conference on Robotics and Automation (ICRA) 2019. This work was awarded **Best Paper in Robot Vision** at ICRA 2019.
 - [AdaReg][adareg_github]: *Bilateral Cyclic Constraint and Adaptive Regularization for Unsupervised Monocular Depth Prediction.* A single image depth prediction method that introduces adaptive regularization. This work was published in the proceedings of Conference on Computer Vision and Pattern Recognition (CVPR) 2019.
 
-We also have works in adversarial attacks on depth estimation methods:
+We also have works in adversarial attacks on depth estimation methods and medical image segmentation:
 - [Stereopagnosia][stereopagnosia_github]: *Stereopagnosia: Fooling Stereo Networks with Adversarial Perturbations.* Adversarial perturbations for stereo depth estimation, published in the Proceedings of AAAI Conference on Artificial Intelligence (AAAI) 2021.
 - [Targeted Attacks for Monodepth][targeted_attacks_monodepth_github]: *Targeted Adversarial Perturbations for Monocular Depth Prediction.* Targeted adversarial perturbations attacks for monocular depth estimation, published in the proceedings of Neural Information Processing Systems (NeurIPS) 2020.
+- [SPiN][spin_github] : *Small Lesion Segmentation in Brain MRIs with Subpixel Embedding.* Subpixel architecture for segmenting ischemic stroke brain lesions in MRI images, published in the Proceedings of Medical Image Computing and Computer Assisted Intervention (MICCAI) Brain Lesion Workshop 2021 as an **oral paper**.
 
 [kitti_dataset]: http://www.cvlibs.net/datasets/kitti/
-[vkitti_dataset]: https://europe.naverlabs.com/research/computer-vision/proxy-virtual-worlds-vkitti-1/
-[scenenet_dataset]: https://robotvault.bitbucket.io/scenenet-rgbd.html
+[nyu_v2_dataset]: https://cs.nyu.edu/~silberman/datasets/nyu_depth_v2.html
 [void_github]: https://github.com/alexklwong/void-dataset
 [voiced_github]: https://github.com/alexklwong/unsupervised-depth-completion-visual-inertial-odometry
+[scaffnet_github]: https://github.com/alexklwong/learning-topology-synthetic-data
+[adaframe_github]: https://github.com/alexklwong/adaframe-depth-completion
 [xivo_github]: https://github.com/ucla-vision/xivo
 [geosup_github]: https://github.com/feixh/GeoSup
 [adareg_github]: https://github.com/alexklwong/adareg-monodispnet
 [stereopagnosia_github]: https://github.com/alexklwong/stereopagnosia
 [targeted_attacks_monodepth_github]: https://github.com/alexklwong/targeted-adversarial-perturbations-monocular-depth
+[spin_github]: https://github.com/alexklwong/subpixel-embedding-segmentation
 
 ## License and disclaimer <a name="license-disclaimer"></a>
 This software is property of the UC Regents, and is provided free of charge for research purposes only. It comes with no warranties, expressed or implied, according to these [terms and conditions](license). For commercial use, please contact [UCLA TDG](https://tdg.ucla.edu).

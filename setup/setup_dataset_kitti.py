@@ -1,3 +1,19 @@
+'''
+Author: Alex Wong <alexw@cs.ucla.edu>
+
+If you use this code, please cite the following paper:
+
+A. Wong, and S. Soatto. Unsupervised Depth Completion with Calibrated Backprojection Layers.
+https://arxiv.org/pdf/2108.10531.pdf
+
+@inproceedings{wong2021unsupervised,
+  title={Unsupervised Depth Completion with Calibrated Backprojection Layers},
+  author={Wong, Alex and Soatto, Stefano},
+  booktitle={Proceedings of the IEEE/CVF International Conference on Computer Vision},
+  pages={12747--12756},
+  year={2021}
+}
+'''
 import os, sys, glob, argparse, cv2
 import multiprocessing as mp
 import numpy as np
@@ -102,9 +118,31 @@ parser.add_argument('--n_thread',  type=int, default=8)
 args = parser.parse_args()
 
 
-def process_frame(params):
-    image0_path, image1_path, image2_path, \
-        sparse_depth_path, ground_truth_path, paths_only = params
+def process_frame(inputs):
+    '''
+    Processes a single frame
+
+    Arg(s):
+        inputs : tuple[str]
+            image path at time t=0,
+            image path at time t=1,
+            image path at time t=-1,
+            sparse depth path at time t=0,
+            ground truth path at time t=0,
+            boolean flag if set then create paths only
+    Returns:
+        str : output concatenated image path at time t=0
+        str : output sparse depth path at time t=0
+        str : output validity map path at time t=0
+        str : output ground truth path at time t=0
+    '''
+
+    image0_path, \
+        image1_path, \
+        image2_path, \
+        sparse_depth_path, \
+        ground_truth_path, \
+        paths_only = inputs
 
     if not paths_only:
         # Read images and concatenate together

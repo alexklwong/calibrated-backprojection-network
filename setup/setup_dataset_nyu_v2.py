@@ -1,3 +1,19 @@
+'''
+Author: Alex Wong <alexw@cs.ucla.edu>
+
+If you use this code, please cite the following paper:
+
+A. Wong, and S. Soatto. Unsupervised Depth Completion with Calibrated Backprojection Layers.
+https://arxiv.org/pdf/2108.10531.pdf
+
+@inproceedings{wong2021unsupervised,
+  title={Unsupervised Depth Completion with Calibrated Backprojection Layers},
+  author={Wong, Alex and Soatto, Stefano},
+  booktitle={Proceedings of the IEEE/CVF International Conference on Computer Vision},
+  pages={12747--12756},
+  year={2021}
+}
+'''
 import warnings
 warnings.filterwarnings("ignore")
 
@@ -33,7 +49,7 @@ args = parser.parse_args()
 NYU_ROOT_DIRPATH = \
     os.path.join('data', 'nyu_v2')
 NYU_OUTPUT_DIRPATH = \
-    os.path.join('data', 'nyu_v2_adverse_weather')
+    os.path.join('data', 'nyu_v2_kbnet')
 
 NYU_TEST_IMAGE_SPLIT_FILEPATH = \
     os.path.join('setup', 'nyu_v2_test_image.txt')
@@ -48,8 +64,6 @@ TRAIN_IMAGE_OUTPUT_FILEPATH = \
     os.path.join(TRAIN_REF_DIRPATH, 'nyu_v2_train_image_{}.txt'.format(args.sparse_depth_distro_type))
 TRAIN_SPARSE_DEPTH_OUTPUT_FILEPATH = \
     os.path.join(TRAIN_REF_DIRPATH, 'nyu_v2_train_sparse_depth_{}.txt'.format(args.sparse_depth_distro_type))
-TRAIN_INTERP_DEPTH_OUTPUT_FILEPATH = \
-    os.path.join(TRAIN_REF_DIRPATH, 'nyu_v2_train_interp_depth_{}.txt'.format(args.sparse_depth_distro_type))
 TRAIN_VALIDITY_MAP_OUTPUT_FILEPATH = \
     os.path.join(TRAIN_REF_DIRPATH, 'nyu_v2_train_validity_map_{}.txt'.format(args.sparse_depth_distro_type))
 TRAIN_GROUND_TRUTH_OUTPUT_FILEPATH = \
@@ -61,8 +75,6 @@ VAL_IMAGE_OUTPUT_FILEPATH = \
     os.path.join(VAL_REF_DIRPATH, 'nyu_v2_val_image_{}.txt'.format(args.sparse_depth_distro_type))
 VAL_SPARSE_DEPTH_OUTPUT_FILEPATH = \
     os.path.join(VAL_REF_DIRPATH, 'nyu_v2_val_sparse_depth_{}.txt'.format(args.sparse_depth_distro_type))
-VAL_INTERP_DEPTH_OUTPUT_FILEPATH = \
-    os.path.join(VAL_REF_DIRPATH, 'nyu_v2_val_interp_depth_{}.txt'.format(args.sparse_depth_distro_type))
 VAL_VALIDITY_MAP_OUTPUT_FILEPATH = \
     os.path.join(VAL_REF_DIRPATH, 'nyu_v2_val_validity_map_{}.txt'.format(args.sparse_depth_distro_type))
 VAL_GROUND_TRUTH_OUTPUT_FILEPATH = \
@@ -74,8 +86,6 @@ TEST_IMAGE_OUTPUT_FILEPATH = \
     os.path.join(TEST_REF_DIRPATH, 'nyu_v2_test_image_{}.txt'.format(args.sparse_depth_distro_type))
 TEST_SPARSE_DEPTH_OUTPUT_FILEPATH = \
     os.path.join(TEST_REF_DIRPATH, 'nyu_v2_test_sparse_depth_{}.txt'.format(args.sparse_depth_distro_type))
-TEST_INTERP_DEPTH_OUTPUT_FILEPATH = \
-    os.path.join(TEST_REF_DIRPATH, 'nyu_v2_test_interp_depth_{}.txt'.format(args.sparse_depth_distro_type))
 TEST_VALIDITY_MAP_OUTPUT_FILEPATH = \
     os.path.join(TEST_REF_DIRPATH, 'nyu_v2_test_validity_map_{}.txt'.format(args.sparse_depth_distro_type))
 TEST_GROUND_TRUTH_OUTPUT_FILEPATH = \
@@ -85,7 +95,23 @@ TEST_INTRINSICS_OUTPUT_FILEPATH = \
 
 
 def process_frame(inputs):
+    '''
+    Processes a single frame
 
+    Arg(s):
+        inputs : tuple
+            image path at time t=0,
+            image path at time t=1,
+            image path at time t=-1,
+            sparse depth path at time t=0,
+            validity map path at time t=0,
+            ground truth path at time t=0
+    Returns:
+        str : output concatenated image path at time t=0
+        str : output sparse depth path at time t=0
+        str : output validity map path at time t=0
+        str : output ground truth path at time t=0
+    '''
     image0_path, image1_path, image2_path, ground_truth_path = inputs
 
     # Load image (for corner detection) to generate valid map
@@ -217,17 +243,12 @@ def process_frame(inputs):
 
         imagec = np.concatenate([image1, image0, image2], axis=1)
 
-        interp_depth = data_utils.interpolate_depth(sparse_depth, validity_map)
-
         # Example: nyu/training/depths/raw_data/bedroom_0001/r-1294886360.208451-2996770081.png
         image_output_path = image0_path \
             .replace(NYU_ROOT_DIRPATH, NYU_OUTPUT_DIRPATH)
         sparse_depth_output_path = ground_truth_path \
             .replace(NYU_ROOT_DIRPATH, NYU_OUTPUT_DIRPATH) \
             .replace('depth', 'sparse_depth')
-        interp_depth_output_path = ground_truth_path \
-            .replace(NYU_ROOT_DIRPATH, NYU_OUTPUT_DIRPATH) \
-            .replace('depth', 'interp_depth')
         validity_map_output_path = ground_truth_path \
             .replace(NYU_ROOT_DIRPATH, NYU_OUTPUT_DIRPATH) \
             .replace('depth', 'validity_map')
@@ -237,7 +258,6 @@ def process_frame(inputs):
 
         image_output_dirpath = os.path.dirname(image_output_path)
         sparse_depth_output_dirpath = os.path.dirname(sparse_depth_output_path)
-        interp_depth_output_dirpath = os.path.dirname(interp_depth_output_path)
         validity_map_output_dirpath = os.path.dirname(validity_map_output_path)
         ground_truth_output_dirpath = os.path.dirname(ground_truth_output_path)
 
@@ -245,7 +265,6 @@ def process_frame(inputs):
         output_dirpaths = [
             image_output_dirpath,
             sparse_depth_output_dirpath,
-            interp_depth_output_dirpath,
             validity_map_output_dirpath,
             ground_truth_output_dirpath,
         ]
@@ -257,20 +276,17 @@ def process_frame(inputs):
         # Write to file
         cv2.imwrite(image_output_path, imagec)
         data_utils.save_depth(sparse_depth, sparse_depth_output_path)
-        data_utils.save_depth(interp_depth, interp_depth_output_path)
         data_utils.save_validity_map(validity_map, validity_map_output_path)
         data_utils.save_depth(ground_truth, ground_truth_output_path)
     else:
         print('Found error in {}'.format(ground_truth_path))
         image_output_path = 'error'
         sparse_depth_output_path = 'error'
-        interp_depth_output_path = 'error'
         validity_map_output_path = 'error'
         ground_truth_output_path = 'error'
 
     return (image_output_path,
             sparse_depth_output_path,
-            interp_depth_output_path,
             validity_map_output_path,
             ground_truth_output_path)
 
@@ -341,7 +357,6 @@ Process training paths
 '''
 train_image_output_paths = []
 train_sparse_depth_output_paths = []
-train_interp_depth_output_paths = []
 train_validity_map_output_paths = []
 train_ground_truth_output_paths = []
 train_intrinsics_output_paths = [intrinsics_output_path]
@@ -383,14 +398,12 @@ for image_sequence, depth_sequence in zip(train_image_sequences, train_depth_seq
         for result in pool_results:
             image_output_path, \
                 sparse_depth_output_path, \
-                interp_depth_output_path, \
                 validity_map_output_path, \
                 ground_truth_output_path = result
 
             error_encountered = \
                 image_output_path == 'error' or \
                 sparse_depth_output_path == 'error' or \
-                interp_depth_output_path == 'error' or \
                 validity_map_output_path == 'error' or \
                 ground_truth_output_path == 'error'
 
@@ -400,34 +413,29 @@ for image_sequence, depth_sequence in zip(train_image_sequences, train_depth_seq
             # Collect filepaths
             train_image_output_paths.append(image_output_path)
             train_sparse_depth_output_paths.append(sparse_depth_output_path)
-            train_interp_depth_output_paths.append(interp_depth_output_path)
             train_validity_map_output_paths.append(validity_map_output_path)
             train_ground_truth_output_paths.append(ground_truth_output_path)
 
 train_intrinsics_output_paths = train_intrinsics_output_paths * len(train_image_output_paths)
 
-print('Storing %d training image file paths into: %s' %
-    (len(train_image_output_paths), TRAIN_IMAGE_OUTPUT_FILEPATH))
+print('Storing {} training image file paths into: {}'.format(
+    len(train_image_output_paths), TRAIN_IMAGE_OUTPUT_FILEPATH))
 data_utils.write_paths(TRAIN_IMAGE_OUTPUT_FILEPATH, train_image_output_paths)
 
-print('Storing %d training sparse depth file paths into: %s' %
-    (len(train_sparse_depth_output_paths), TRAIN_SPARSE_DEPTH_OUTPUT_FILEPATH))
+print('Storing {} training sparse depth file paths into: {}'.format(
+    len(train_sparse_depth_output_paths), TRAIN_SPARSE_DEPTH_OUTPUT_FILEPATH))
 data_utils.write_paths(TRAIN_SPARSE_DEPTH_OUTPUT_FILEPATH, train_sparse_depth_output_paths)
 
-print('Storing %d training interp depth file paths into: %s' %
-    (len(train_interp_depth_output_paths), TRAIN_INTERP_DEPTH_OUTPUT_FILEPATH))
-data_utils.write_paths(TRAIN_INTERP_DEPTH_OUTPUT_FILEPATH, train_interp_depth_output_paths)
-
-print('Storing %d training validity_map file paths into: %s' %
-    (len(train_validity_map_output_paths), TRAIN_VALIDITY_MAP_OUTPUT_FILEPATH))
+print('Storing {} training validity_map file paths into: {}'.format(
+    len(train_validity_map_output_paths), TRAIN_VALIDITY_MAP_OUTPUT_FILEPATH))
 data_utils.write_paths(TRAIN_VALIDITY_MAP_OUTPUT_FILEPATH, train_validity_map_output_paths)
 
-print('Storing %d training ground truth file paths into: %s' %
-    (len(train_ground_truth_output_paths), TRAIN_GROUND_TRUTH_OUTPUT_FILEPATH))
+print('Storing {} training ground truth file paths into: {}'.format(
+    len(train_ground_truth_output_paths), TRAIN_GROUND_TRUTH_OUTPUT_FILEPATH))
 data_utils.write_paths(TRAIN_GROUND_TRUTH_OUTPUT_FILEPATH, train_ground_truth_output_paths)
 
-print('Storing %d training intrinsics file paths into: %s' %
-    (len(train_intrinsics_output_paths), TRAIN_INTRINSICS_OUTPUT_FILEPATH))
+print('Storing {} training intrinsics file paths into: {}'.format(
+    len(train_intrinsics_output_paths), TRAIN_INTRINSICS_OUTPUT_FILEPATH))
 data_utils.write_paths(TRAIN_INTRINSICS_OUTPUT_FILEPATH, train_intrinsics_output_paths)
 
 
@@ -438,14 +446,12 @@ test_image_split_paths = data_utils.read_paths(NYU_TEST_IMAGE_SPLIT_FILEPATH)
 
 val_image_output_paths = []
 val_sparse_depth_output_paths = []
-val_interp_depth_output_paths = []
 val_validity_map_output_paths = []
 val_ground_truth_output_paths = []
 val_intrinsics_output_paths = [intrinsics_output_path]
 
 test_image_output_paths = []
 test_sparse_depth_output_paths = []
-test_interp_depth_output_paths = []
 test_validity_map_output_paths = []
 test_ground_truth_output_paths = []
 test_intrinsics_output_paths = [intrinsics_output_path]
@@ -473,14 +479,12 @@ with mp.Pool() as pool:
     for result in pool_results:
         image_output_path, \
             sparse_depth_output_path, \
-            interp_depth_output_path, \
             validity_map_output_path, \
             ground_truth_output_path = result
 
         error_encountered = \
             image_output_path == 'error' or \
             sparse_depth_output_path == 'error' or \
-            interp_depth_output_path == 'error' or \
             validity_map_output_path == 'error' or \
             ground_truth_output_path == 'error'
 
@@ -496,14 +500,12 @@ with mp.Pool() as pool:
             # Collect test filepaths
             test_image_output_paths.append(image_output_path)
             test_sparse_depth_output_paths.append(sparse_depth_output_path)
-            test_interp_depth_output_paths.append(interp_depth_output_path)
             test_validity_map_output_paths.append(validity_map_output_path)
             test_ground_truth_output_paths.append(ground_truth_output_path)
         else:
             # Collect validation filepaths
             val_image_output_paths.append(image_output_path)
             val_sparse_depth_output_paths.append(sparse_depth_output_path)
-            val_interp_depth_output_paths.append(interp_depth_output_path)
             val_validity_map_output_paths.append(validity_map_output_path)
             val_ground_truth_output_paths.append(ground_truth_output_path)
 
@@ -513,54 +515,46 @@ test_intrinsics_output_paths = test_intrinsics_output_paths * len(test_image_out
 '''
 Write validation output paths
 '''
-print('Storing %d validation image file paths into: %s' %
-    (len(val_image_output_paths), VAL_IMAGE_OUTPUT_FILEPATH))
+print('Storing {} validation image file paths into: {}'.format(
+    len(val_image_output_paths), VAL_IMAGE_OUTPUT_FILEPATH))
 data_utils.write_paths(VAL_IMAGE_OUTPUT_FILEPATH, val_image_output_paths)
 
-print('Storing %d validation sparse depth file paths into: %s' %
-    (len(val_sparse_depth_output_paths), VAL_SPARSE_DEPTH_OUTPUT_FILEPATH))
+print('Storing {} validation sparse depth file paths into: {}'.format(
+    len(val_sparse_depth_output_paths), VAL_SPARSE_DEPTH_OUTPUT_FILEPATH))
 data_utils.write_paths(VAL_SPARSE_DEPTH_OUTPUT_FILEPATH, val_sparse_depth_output_paths)
 
-print('Storing %d validation interp depth file paths into: %s' %
-    (len(val_interp_depth_output_paths), VAL_INTERP_DEPTH_OUTPUT_FILEPATH))
-data_utils.write_paths(VAL_INTERP_DEPTH_OUTPUT_FILEPATH, val_interp_depth_output_paths)
-
-print('Storing %d validation validity_map file paths into: %s' %
-    (len(val_validity_map_output_paths), VAL_VALIDITY_MAP_OUTPUT_FILEPATH))
+print('Storing {} validation validity_map file paths into: {}'.format(
+    len(val_validity_map_output_paths), VAL_VALIDITY_MAP_OUTPUT_FILEPATH))
 data_utils.write_paths(VAL_VALIDITY_MAP_OUTPUT_FILEPATH, val_validity_map_output_paths)
 
-print('Storing %d validation dense depth file paths into: %s' %
-    (len(val_ground_truth_output_paths), VAL_GROUND_TRUTH_OUTPUT_FILEPATH))
+print('Storing {} validation dense depth file paths into: {}'.format(
+    len(val_ground_truth_output_paths), VAL_GROUND_TRUTH_OUTPUT_FILEPATH))
 data_utils.write_paths(VAL_GROUND_TRUTH_OUTPUT_FILEPATH, val_ground_truth_output_paths)
 
-print('Storing %d validation intrinsics file paths into: %s' %
-    (len(val_intrinsics_output_paths), VAL_INTRINSICS_OUTPUT_FILEPATH))
+print('Storing {} validation intrinsics file paths into: {}'.format(
+    len(val_intrinsics_output_paths), VAL_INTRINSICS_OUTPUT_FILEPATH))
 data_utils.write_paths(VAL_INTRINSICS_OUTPUT_FILEPATH, val_intrinsics_output_paths)
 
 
 '''
 Write testing output paths
 '''
-print('Storing %d testing image file paths into: %s' %
-    (len(test_image_output_paths), TEST_IMAGE_OUTPUT_FILEPATH))
+print('Storing {} testing image file paths into: {}'.format(
+    len(test_image_output_paths), TEST_IMAGE_OUTPUT_FILEPATH))
 data_utils.write_paths(TEST_IMAGE_OUTPUT_FILEPATH, test_image_output_paths)
 
-print('Storing %d testing sparse depth file paths into: %s' %
-    (len(test_sparse_depth_output_paths), TEST_SPARSE_DEPTH_OUTPUT_FILEPATH))
+print('Storing {} testing sparse depth file paths into: {}'.format(
+    len(test_sparse_depth_output_paths), TEST_SPARSE_DEPTH_OUTPUT_FILEPATH))
 data_utils.write_paths(TEST_SPARSE_DEPTH_OUTPUT_FILEPATH, test_sparse_depth_output_paths)
 
-print('Storing %d testing interp depth file paths into: %s' %
-    (len(test_interp_depth_output_paths), TEST_INTERP_DEPTH_OUTPUT_FILEPATH))
-data_utils.write_paths(TEST_INTERP_DEPTH_OUTPUT_FILEPATH, test_interp_depth_output_paths)
-
-print('Storing %d testing validity_map file paths into: %s' %
-    (len(test_validity_map_output_paths), TEST_VALIDITY_MAP_OUTPUT_FILEPATH))
+print('Storing {} testing validity_map file paths into: {}'.format(
+    len(test_validity_map_output_paths), TEST_VALIDITY_MAP_OUTPUT_FILEPATH))
 data_utils.write_paths(TEST_VALIDITY_MAP_OUTPUT_FILEPATH, test_validity_map_output_paths)
 
-print('Storing %d testing dense depth file paths into: %s' %
-    (len(test_ground_truth_output_paths), TEST_GROUND_TRUTH_OUTPUT_FILEPATH))
+print('Storing {} testing dense depth file paths into: {}'.format(
+    len(test_ground_truth_output_paths), TEST_GROUND_TRUTH_OUTPUT_FILEPATH))
 data_utils.write_paths(TEST_GROUND_TRUTH_OUTPUT_FILEPATH, test_ground_truth_output_paths)
 
-print('Storing %d testing intrinsics file paths into: %s' %
-    (len(test_intrinsics_output_paths), TEST_INTRINSICS_OUTPUT_FILEPATH))
+print('Storing {} testing intrinsics file paths into: {}'.format(
+    len(test_intrinsics_output_paths), TEST_INTRINSICS_OUTPUT_FILEPATH))
 data_utils.write_paths(TEST_INTRINSICS_OUTPUT_FILEPATH, test_intrinsics_output_paths)

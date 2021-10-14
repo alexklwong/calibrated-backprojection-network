@@ -80,21 +80,21 @@ https://drive.google.com/uc?id=1WkUAo823A2lBhYW04KfuFeKXNctiurrA
 )
 
 if [ $# -eq 0 ]; then
-  for file_url in ${void_150_urls[@]}; do
-    gdown $file_url
-  done
+    for file_url in ${void_150_urls[@]}; do
+        gdown $file_url
+    done
 fi
 
 file_id=1
 while [ $file_id -le ${#void_150_urls[@]} ]; do
-  unzip -o 'void_150-'${file_id}'.zip' -d 'void_150/data/'
-  mv 'void_150-'${file_id}'.zip' 'tmp/'
-  file_id=$(( ${file_id} + 1 ))
+    unzip -o 'void_150-'${file_id}'.zip' -d 'void_150/data/'
+    mv 'void_150-'${file_id}'.zip' 'tmp/'
+    file_id=$(( ${file_id} + 1 ))
 done
 
 # VOID 500 data urls
 if [$# -eq 0]; then
-  gdown https://drive.google.com/uc?id=1Q0T8UUZjVDrfIDEMigMyu_7nb-gcQdeW
+    gdown https://drive.google.com/uc?id=1Q0T8UUZjVDrfIDEMigMyu_7nb-gcQdeW
 fi
 unzip -o 'void_500-0.zip' -d 'void_500/'
 mv 'void_500-0.zip' 'tmp/'
@@ -159,21 +159,21 @@ https://drive.google.com/uc?id=1ZX4PZA2Q-1J2bXcGc9l9xFVv_G2P969C
 )
 
 if [ $# -eq 0 ]; then
-  for file_url in ${void_500_urls[@]}; do
-    gdown $file_url
-  done
+    for file_url in ${void_500_urls[@]}; do
+        gdown $file_url
+    done
 fi
 
 file_id=1
 while [ $file_id -le ${#void_500_urls[@]} ]; do
-  unzip -o 'void_500-'${file_id}'.zip' -d 'void_500/data/'
-  mv 'void_500-'${file_id}'.zip' 'tmp/'
-  file_id=$(( ${file_id} + 1 ))
+    unzip -o 'void_500-'${file_id}'.zip' -d 'void_500/data/'
+    mv 'void_500-'${file_id}'.zip' 'tmp/'
+    file_id=$(( ${file_id} + 1 ))
 done
 
 # VOID 1500 data urls
 if [$# -eq 0]; then
-  gdown https://drive.google.com/uc?id=10p61P0rUmK_-GnZ_WcfYlWJGwLlEd7KW
+    gdown https://drive.google.com/uc?id=10p61P0rUmK_-GnZ_WcfYlWJGwLlEd7KW
 fi
 unzip -o 'void_1500-0.zip' -d 'void_1500/'
 mv 'void_1500-0.zip' 'tmp/'
@@ -238,16 +238,16 @@ https://drive.google.com/uc?id=1PfIfDhkw0hFDdC2PBgrFpvEQWUkmXtzX
 )
 
 if [ $# -eq 0 ]; then
-  for file_url in ${void_1500_urls[@]}; do
-    gdown $file_url
-  done
+    for file_url in ${void_1500_urls[@]}; do
+      gdown $file_url
+    done
 fi
 
 file_id=1
 while [ $file_id -le ${#void_1500_urls[@]} ]; do
-  unzip -o 'void_1500-'${file_id}'.zip' -d 'void_1500/data/'
-  mv 'void_1500-'${file_id}'.zip' 'tmp/'
-  file_id=$(( ${file_id} + 1 ))
+    unzip -o 'void_1500-'${file_id}'.zip' -d 'void_1500/data/'
+    mv 'void_1500-'${file_id}'.zip' 'tmp/'
+    file_id=$(( ${file_id} + 1 ))
 done
 
 cd ..

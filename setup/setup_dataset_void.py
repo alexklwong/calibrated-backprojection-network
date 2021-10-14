@@ -1,3 +1,19 @@
+'''
+Author: Alex Wong <alexw@cs.ucla.edu>
+
+If you use this code, please cite the following paper:
+
+A. Wong, and S. Soatto. Unsupervised Depth Completion with Calibrated Backprojection Layers.
+https://arxiv.org/pdf/2108.10531.pdf
+
+@inproceedings{wong2021unsupervised,
+  title={Unsupervised Depth Completion with Calibrated Backprojection Layers},
+  author={Wong, Alex and Soatto, Stefano},
+  booktitle={Proceedings of the IEEE/CVF International Conference on Computer Vision},
+  pages={12747--12756},
+  year={2021}
+}
+'''
 import os, sys, glob, argparse
 import multiprocessing as mp
 import numpy as np
@@ -83,14 +99,34 @@ VOID_UNUSED_GROUND_TRUTH_1500_FILEPATH  = os.path.join(TEST_REFS_DIRPATH, 'void_
 VOID_UNUSED_INTRINSICS_1500_FILEPATH    = os.path.join(TEST_REFS_DIRPATH, 'void_unused_intrinsics_1500.txt')
 
 
-def process_frame(args):
+def process_frame(inputs):
+    '''
+    Processes a single frame
+
+    Arg(s):
+        inputs : tuple
+            image path at time t=0,
+            image path at time t=1,
+            image path at time t=-1,
+            sparse depth path at time t=0,
+            validity map path at time t=0,
+            ground truth path at time t=0,
+            boolean flag if set then create paths only
+    Returns:
+        str : image reference directory path
+        str : output concatenated image path at time t=0
+        str : output sparse depth path at time t=0
+        str : output validity map path at time t=0
+        str : output ground truth path at time t=0
+    '''
+
     image_path1, \
         image_path0, \
         image_path2, \
         sparse_depth_path, \
         validity_map_path, \
         ground_truth_path, \
-        paths_only = args
+        paths_only = inputs
 
     if not paths_only:
         # Create image composite of triplets
