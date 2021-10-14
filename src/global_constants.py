@@ -1,3 +1,19 @@
+'''
+Author: Alex Wong <alexw@cs.ucla.edu>
+
+If you use this code, please cite the following paper:
+
+A. Wong, and S. Soatto. Unsupervised Depth Completion with Calibrated Backprojection Layers.
+https://arxiv.org/pdf/2108.10531.pdf
+
+@inproceedings{wong2021unsupervised,
+  title={Unsupervised Depth Completion with Calibrated Backprojection Layers},
+  author={Wong, Alex and Soatto, Stefano},
+  booktitle={Proceedings of the IEEE/CVF International Conference on Computer Vision},
+  pages={12747--12756},
+  year={2021}
+}
+'''
 # Batch settings
 N_BATCH                                     = 8
 N_HEIGHT                                    = 320
