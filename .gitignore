@@ -8,3 +8,7 @@ tools/_jupyter/.ipynb_checkpoints
 training
 validation
 testing
+void-dataset
+test_data
+pretrained
+setup/__pycache__

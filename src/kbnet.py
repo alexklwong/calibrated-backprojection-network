@@ -765,7 +765,7 @@ def run(image_path,
         datasets.KBNetInferenceDataset(
             image_paths=image_paths,
             sparse_depth_paths=sparse_depth_paths,
-            intrinsics_paths=intrinsics_paths),
+            intrinsics_paths=intrinsics_paths, use_image_triplet=False),
         batch_size=1,
         shuffle=False,
         num_workers=1,

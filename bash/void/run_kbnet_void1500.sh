@@ -3,10 +3,10 @@
 export CUDA_VISIBLE_DEVICES=0
 
 python src/run_kbnet.py \
---image_path testing/void/void_test_image_1500.txt \
---sparse_depth_path testing/void/void_test_sparse_depth_1500.txt \
---intrinsics_path testing/void/void_test_intrinsics_1500.txt \
---ground_truth_path testing/void/void_test_ground_truth_1500.txt \
+--image_path /home/rakshith/CTU/Sem_3/Project/Depth\ Completion/repos/Awong/calibrated-backprojection-network/test_data/img.txt \
+--sparse_depth_path /home/rakshith/CTU/Sem_3/Project/Depth\ Completion/repos/Awong/calibrated-backprojection-network/test_data/sparse.txt \
+--intrinsics_path /home/rakshith/CTU/Sem_3/Project/Depth\ Completion/repos/Awong/calibrated-backprojection-network/test_data/K.txt \
+--ground_truth_path /home/rakshith/CTU/Sem_3/Project/Depth\ Completion/repos/Awong/calibrated-backprojection-network/test_data/gt.txt \
 --input_channels_image 3 \
 --input_channels_depth 2 \
 --normalized_image_range 0 1 \
@@ -29,7 +29,7 @@ python src/run_kbnet.py \
 --max_evaluate_depth 5.0 \
 --save_outputs \
 --depth_model_restore_path \
-pretrained_models/void/kbnet-void1500.pth \
+pretrained/pretrained_models/void/kbnet-void1500.pth \
 --output_path \
 pretrained_models/void/evaluation_results/void1500 \
 --device gpu
