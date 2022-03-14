@@ -81,7 +81,7 @@ class Camera():
                     cv2.imwrite(self.inner_folder+'/'+str(time)+'.jpg', image)
                 else:
                     depth_image = self.br.imgmsg_to_cv2(msg, desired_encoding="passthrough")
-                    depth_array = np.array(depth_image, dtype=np.uint32)
+                    depth_array = np.array(depth_image, dtype=np.uint32)*256 # The *256 is needed to preserve floating point accuracy; while loading depth, it is multiplied by 256.
                     z = Im.fromarray(depth_array, mode='I')
                     z.save(self.inner_folder+'/'+str(time)+'.png')
                     # cv2.imwrite(self.inner_folder+'/'+str(time)+'.png', depth_image)
