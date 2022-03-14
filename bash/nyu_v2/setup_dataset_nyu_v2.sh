@@ -3,7 +3,7 @@
 mkdir -p 'data/nyu_v2/tmp'
 
 nyu_v2_urls=(
-http://horatio.cs.nyu.edu/mit/silberman/nyu_depth_v2/basements.zip,
+http://horatio.cs.nyu.edu/mit/silberman/nyu_depth_v2/basements.zip
 http://horatio.cs.nyu.edu/mit/silberman/nyu_depth_v2/bathrooms_part1.zip
 http://horatio.cs.nyu.edu/mit/silberman/nyu_depth_v2/bathrooms_part2.zip
 http://horatio.cs.nyu.edu/mit/silberman/nyu_depth_v2/bathrooms_part3.zip
