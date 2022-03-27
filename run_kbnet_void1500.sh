@@ -3,10 +3,10 @@
 export CUDA_VISIBLE_DEVICES=0
 
 python src/run_kbnet.py \
---image_path /home/rakshith/CTU/Sem_3/Project/Depth\ Completion/repos/Awong/calibrated-backprojection-network/test_data/img.txt \
---sparse_depth_path /home/rakshith/CTU/Sem_3/Project/Depth\ Completion/repos/Awong/calibrated-backprojection-network/test_data/sparse.txt \
---intrinsics_path /home/rakshith/CTU/Sem_3/Project/Depth\ Completion/repos/Awong/calibrated-backprojection-network/test_data/K.txt \
---ground_truth_path /home/rakshith/CTU/Sem_3/Project/Depth\ Completion/repos/Awong/calibrated-backprojection-network/test_data/gt.txt \
+--image_path /run/user/1000/gvfs/sftp:host=data.ciirc.cvut.cz,user=madharak/nfs/datasets/SPRING/ARI/Depth\ Completion\ Datasets/void-dataset/data/void_release/void_1500/data/birthplace_of_internet/image/1552097915.5257.png \
+--sparse_depth_path /run/user/1000/gvfs/sftp:host=data.ciirc.cvut.cz,user=madharak/nfs/datasets/SPRING/ARI/Depth\ Completion\ Datasets/void-dataset/data/void_release/void_1500/data/birthplace_of_internet/sparse_depth/1552097915.5257.png \
+--intrinsics_path /run/user/1000/gvfs/sftp:host=data.ciirc.cvut.cz,user=madharak/nfs/datasets/SPRING/ARI/Depth\ Completion\ Datasets/void-dataset/data/void_release/void_1500/data/birthplace_of_internet/K.txt \
+--ground_truth_path /run/user/1000/gvfs/sftp:host=data.ciirc.cvut.cz,user=madharak/nfs/datasets/SPRING/ARI/Depth\ Completion\ Datasets/void-dataset/data/void_release/void_1500/data/birthplace_of_internet/ground_truth/1552097915.5257.png  \
 --input_channels_image 3 \
 --input_channels_depth 2 \
 --normalized_image_range 0 1 \

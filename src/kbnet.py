@@ -26,7 +26,7 @@ from posenet_model import PoseNetModel
 import global_constants as settings
 from transforms import Transforms
 from net_utils import OutlierRemoval
-
+from pathlib import Path as pathlib_path
 
 def train(train_image_path,
           train_sparse_depth_path,
@@ -727,15 +727,31 @@ def run(image_path,
     '''
     Load input paths and set up dataloader
     '''
-    image_paths = data_utils.read_paths(image_path)
-    sparse_depth_paths = data_utils.read_paths(sparse_depth_path)
-    intrinsics_paths = data_utils.read_paths(intrinsics_path)
-
+    img_path = pathlib_path(image_path)
+    image_paths = None
+    sparse_depth_paths = None
+    intrinsics_paths = None
+    
+    if img_path.suffix.lower() == '.png' or img_path.suffix.lower() == '.jpg':
+        image_paths =  [image_path]
+        sparse_depth_paths = [sparse_depth_path]
+        intrinsics_paths = [intrinsics_path]
+        print(" \n\n Inference on Single image \n\n")
+    else:
+        image_paths = data_utils.read_paths(image_path)
+        sparse_depth_paths = data_utils.read_paths(sparse_depth_path)
+        intrinsics_paths = data_utils.read_paths(intrinsics_path)
+        
     ground_truth_available = False
 
     if ground_truth_path != '':
+        ground_truth_paths = None
         ground_truth_available = True
-        ground_truth_paths = data_utils.read_paths(ground_truth_path)
+        gtpath = pathlib_path(ground_truth_path)
+        if gtpath.suffix.lower() == '.png' or gtpath.suffix.lower() == '.jpg':
+            ground_truth_paths = [ground_truth_path]
+        else:
+            ground_truth_paths = data_utils.read_paths(ground_truth_path)
 
     n_sample = len(image_paths)
 

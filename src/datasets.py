@@ -271,7 +271,6 @@ class KBNetInferenceDataset(torch.utils.data.Dataset):
         # Load depth
         sparse_depth = load_depth(self.sparse_depth_paths[index])
 
-        print('\n\n',self.intrinsics_paths[index],'\n\n')
         # Load camera intrinsics
         intrinsics = np.loadtxt(self.intrinsics_paths[index]).astype(np.float32)
 

@@ -23,8 +23,6 @@ import data_utils
 
 
 VOID_ROOT_DIRPATH       = os.path.join('../void-dataset/data', 'void_release')
-VOID_DATA_150_DIRPATH   = os.path.join(VOID_ROOT_DIRPATH, 'void_150')
-VOID_DATA_500_DIRPATH   = os.path.join(VOID_ROOT_DIRPATH, 'void_500')
 VOID_DATA_1500_DIRPATH  = os.path.join(VOID_ROOT_DIRPATH, 'void_1500')
 
 VOID_OUTPUT_DIRPATH     = os.path.join('../void-dataset/data', 'void_kbnet')
@@ -43,56 +41,22 @@ VOID_TEST_INTRINSICS_FILENAME     = 'test_intrinsics.txt'
 TRAIN_REFS_DIRPATH      = os.path.join('training', 'void')
 TEST_REFS_DIRPATH       = os.path.join('testing', 'void')
 
-# VOID training set 150 density
-VOID_TRAIN_IMAGE_150_FILEPATH           = os.path.join(TRAIN_REFS_DIRPATH, 'void_train_image_150.txt')
-VOID_TRAIN_SPARSE_DEPTH_150_FILEPATH    = os.path.join(TRAIN_REFS_DIRPATH, 'void_train_sparse_depth_150.txt')
-VOID_TRAIN_VALIDITY_MAP_150_FILEPATH    = os.path.join(TRAIN_REFS_DIRPATH, 'void_train_validity_map_150.txt')
-VOID_TRAIN_GROUND_TRUTH_150_FILEPATH    = os.path.join(TRAIN_REFS_DIRPATH, 'void_train_ground_truth_150.txt')
-VOID_TRAIN_INTRINSICS_150_FILEPATH      = os.path.join(TRAIN_REFS_DIRPATH, 'void_train_intrinsics_150.txt')
-# VOID training set 500 density
-VOID_TRAIN_IMAGE_500_FILEPATH           = os.path.join(TRAIN_REFS_DIRPATH, 'void_train_image_500.txt')
-VOID_TRAIN_SPARSE_DEPTH_500_FILEPATH    = os.path.join(TRAIN_REFS_DIRPATH, 'void_train_sparse_depth_500.txt')
-VOID_TRAIN_VALIDITY_MAP_500_FILEPATH    = os.path.join(TRAIN_REFS_DIRPATH, 'void_train_validity_map_500.txt')
-VOID_TRAIN_GROUND_TRUTH_500_FILEPATH    = os.path.join(TRAIN_REFS_DIRPATH, 'void_train_ground_truth_500.txt')
-VOID_TRAIN_INTRINSICS_500_FILEPATH      = os.path.join(TRAIN_REFS_DIRPATH, 'void_train_intrinsics_500.txt')
 # VOID training set 1500 density
 VOID_TRAIN_IMAGE_1500_FILEPATH          = os.path.join(TRAIN_REFS_DIRPATH, 'void_train_image_1500.txt')
+VOID_TRAIN_POSE_1500_FILEPATH           = os.path.join(TRAIN_REFS_DIRPATH, 'void_train_pose_1500.txt')
 VOID_TRAIN_SPARSE_DEPTH_1500_FILEPATH   = os.path.join(TRAIN_REFS_DIRPATH, 'void_train_sparse_depth_1500.txt')
 VOID_TRAIN_VALIDITY_MAP_1500_FILEPATH   = os.path.join(TRAIN_REFS_DIRPATH, 'void_train_validity_map_1500.txt')
 VOID_TRAIN_GROUND_TRUTH_1500_FILEPATH   = os.path.join(TRAIN_REFS_DIRPATH, 'void_train_ground_truth_1500.txt')
 VOID_TRAIN_INTRINSICS_1500_FILEPATH     = os.path.join(TRAIN_REFS_DIRPATH, 'void_train_intrinsics_1500.txt')
-# VOID testing set 150 density
-VOID_TEST_IMAGE_150_FILEPATH            = os.path.join(TEST_REFS_DIRPATH, 'void_test_image_150.txt')
-VOID_TEST_SPARSE_DEPTH_150_FILEPATH     = os.path.join(TEST_REFS_DIRPATH, 'void_test_sparse_depth_150.txt')
-VOID_TEST_VALIDITY_MAP_150_FILEPATH     = os.path.join(TEST_REFS_DIRPATH, 'void_test_validity_map_150.txt')
-VOID_TEST_GROUND_TRUTH_150_FILEPATH     = os.path.join(TEST_REFS_DIRPATH, 'void_test_ground_truth_150.txt')
-VOID_TEST_INTRINSICS_150_FILEPATH       = os.path.join(TEST_REFS_DIRPATH, 'void_test_intrinsics_150.txt')
-# VOID testing set 500 density
-VOID_TEST_IMAGE_500_FILEPATH            = os.path.join(TEST_REFS_DIRPATH, 'void_test_image_500.txt')
-VOID_TEST_SPARSE_DEPTH_500_FILEPATH     = os.path.join(TEST_REFS_DIRPATH, 'void_test_sparse_depth_500.txt')
-VOID_TEST_VALIDITY_MAP_500_FILEPATH     = os.path.join(TEST_REFS_DIRPATH, 'void_test_validity_map_500.txt')
-VOID_TEST_GROUND_TRUTH_500_FILEPATH     = os.path.join(TEST_REFS_DIRPATH, 'void_test_ground_truth_500.txt')
-VOID_TEST_INTRINSICS_500_FILEPATH       = os.path.join(TEST_REFS_DIRPATH, 'void_test_intrinsics_500.txt')
 # VOID testing set 1500 density
 VOID_TEST_IMAGE_1500_FILEPATH           = os.path.join(TEST_REFS_DIRPATH, 'void_test_image_1500.txt')
 VOID_TEST_SPARSE_DEPTH_1500_FILEPATH    = os.path.join(TEST_REFS_DIRPATH, 'void_test_sparse_depth_1500.txt')
 VOID_TEST_VALIDITY_MAP_1500_FILEPATH    = os.path.join(TEST_REFS_DIRPATH, 'void_test_validity_map_1500.txt')
 VOID_TEST_GROUND_TRUTH_1500_FILEPATH    = os.path.join(TEST_REFS_DIRPATH, 'void_test_ground_truth_1500.txt')
 VOID_TEST_INTRINSICS_1500_FILEPATH      = os.path.join(TEST_REFS_DIRPATH, 'void_test_intrinsics_1500.txt')
-# VOID unused testing set 150 density
-VOID_UNUSED_IMAGE_150_FILEPATH          = os.path.join(TEST_REFS_DIRPATH, 'void_unused_image_150.txt')
-VOID_UNUSED_SPARSE_DEPTH_150_FILEPATH   = os.path.join(TEST_REFS_DIRPATH, 'void_unused_sparse_depth_150.txt')
-VOID_UNUSED_VALIDITY_MAP_150_FILEPATH   = os.path.join(TEST_REFS_DIRPATH, 'void_unused_validity_map_150.txt')
-VOID_UNUSED_GROUND_TRUTH_150_FILEPATH   = os.path.join(TEST_REFS_DIRPATH, 'void_unused_ground_truth_150.txt')
-VOID_UNUSED_INTRINSICS_150_FILEPATH     = os.path.join(TEST_REFS_DIRPATH, 'void_unused_intrinsics_150.txt')
-# VOID unused testing set 500 density
-VOID_UNUSED_IMAGE_500_FILEPATH          = os.path.join(TEST_REFS_DIRPATH, 'void_unused_image_500.txt')
-VOID_UNUSED_SPARSE_DEPTH_500_FILEPATH   = os.path.join(TEST_REFS_DIRPATH, 'void_unused_sparse_depth_500.txt')
-VOID_UNUSED_VALIDITY_MAP_500_FILEPATH   = os.path.join(TEST_REFS_DIRPATH, 'void_unused_validity_map_500.txt')
-VOID_UNUSED_GROUND_TRUTH_500_FILEPATH   = os.path.join(TEST_REFS_DIRPATH, 'void_unused_ground_truth_500.txt')
-VOID_UNUSED_INTRINSICS_500_FILEPATH     = os.path.join(TEST_REFS_DIRPATH, 'void_unused_intrinsics_500.txt')
 # VOID unused testing set 1500 density
 VOID_UNUSED_IMAGE_1500_FILEPATH         = os.path.join(TEST_REFS_DIRPATH, 'void_unused_image_1500.txt')
+VOID_UNUSED_POSE_1500_FILEPATH          = os.path.join(TEST_REFS_DIRPATH, 'void_unused_pose_1500.txt')
 VOID_UNUSED_SPARSE_DEPTH_1500_FILEPATH  = os.path.join(TEST_REFS_DIRPATH, 'void_unused_sparse_depth_1500.txt')
 VOID_UNUSED_VALIDITY_MAP_1500_FILEPATH  = os.path.join(TEST_REFS_DIRPATH, 'void_unused_validity_map_1500.txt')
 VOID_UNUSED_GROUND_TRUTH_1500_FILEPATH  = os.path.join(TEST_REFS_DIRPATH, 'void_unused_ground_truth_1500.txt')
@@ -108,6 +72,9 @@ def process_frame(inputs):
             image path at time t=0,
             image path at time t=1,
             image path at time t=-1,
+            pose path at time t=0
+            pose path at time t=1
+            pose path at time t=-1
             sparse depth path at time t=0,
             validity map path at time t=0,
             ground truth path at time t=0,
