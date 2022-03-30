@@ -837,7 +837,8 @@ def project_to_pixel(points, pose, intrinsics, shape):
     intrinsics = torch.cat([intrinsics, row], dim=1)
 
     # Apply the transformation and project: \pi K g p
-    T = torch.matmul(intrinsics, pose)
+    # print(type(pose))
+    T = torch.matmul(intrinsics, pose.float())
     T = T[:, 0:3, :]
     points = torch.matmul(T, points)
     points = points / (torch.unsqueeze(points[:, 2, :], dim=1) + 1e-7)

@@ -11,4 +11,5 @@ testing
 void-dataset
 test_data
 pretrained
+trained_kbnet/
 setup/__pycache__

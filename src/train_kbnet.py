@@ -25,6 +25,8 @@ parser = argparse.ArgumentParser()
 # Training and validation input filepaths
 parser.add_argument('--train_image_path',
     type=str, required=True, help='Path to list of training image paths')
+parser.add_argument('--train_pose_path',
+    type=str, required=False, help='Path to list of training pose paths', default=" ")
 parser.add_argument('--train_sparse_depth_path',
     type=str, required=True, help='Path to list of training sparse depth paths')
 parser.add_argument('--train_intrinsics_path',
@@ -182,6 +184,7 @@ if __name__ == '__main__':
     args.device = settings.CUDA if args.device == settings.GPU else args.device
 
     train(train_image_path=args.train_image_path,
+          train_pose_path=args.train_pose_path,
           train_sparse_depth_path=args.train_sparse_depth_path,
           train_intrinsics_path=args.train_intrinsics_path,
           val_image_path=args.val_image_path,

@@ -18,6 +18,25 @@ import numpy as np
 import torch.utils.data
 import data_utils
 
+def load_pose_triplet(path):
+    '''
+    Load and returns 4x4 pose matrices at timt t-1,t, t+1
+    '''
+    poses = np.loadtxt(path)
+    poses = poses.reshape(poses.shape[0], poses.shape[1]//4, 4)
+    affine_row = np.asarray([0,0,0,1], dtype=poses.dtype)
+    
+    pose1 = poses[0,:,:].copy()
+    pose1 = np.asarray(pose1, dtype=np.float32)
+    pose1 = np.vstack((pose1, affine_row))
+    pose0 = poses[1,:,:].copy()
+    pose0 = np.asarray(pose0, dtype=np.float32)
+    pose0 = np.vstack((pose0, affine_row))
+    pose2 = poses[2,:,:].copy()
+    pose2 = np.asarray(pose2, dtype=np.float32)
+    pose2 = np.vstack((pose2, affine_row))
+
+    return pose1, pose0, pose2
 
 def load_image_triplet(path, normalize=True):
     '''
@@ -182,10 +201,12 @@ class KBNetTrainingDataset(torch.utils.data.Dataset):
                  image_paths,
                  sparse_depth_paths,
                  intrinsics_paths,
+                 pose_paths=None,
                  shape=None,
                  random_crop_type=['none']):
 
         self.image_paths = image_paths
+        self.pose_paths = pose_paths
         self.sparse_depth_paths = sparse_depth_paths
         self.intrinsics_paths = intrinsics_paths
 
@@ -206,6 +227,7 @@ class KBNetTrainingDataset(torch.utils.data.Dataset):
         sparse_depth0 = load_depth(self.sparse_depth_paths[index])
 
         # Load camera intrinsics
+        # print(self.intrinsics_paths[index])
         intrinsics = np.load(self.intrinsics_paths[index]).astype(np.float32)
 
         # Crop image, depth and adjust intrinsics
@@ -221,8 +243,11 @@ class KBNetTrainingDataset(torch.utils.data.Dataset):
             T.astype(np.float32)
             for T in [image0, image1, image2, sparse_depth0, intrinsics]
         ]
-
-        return image0, image1, image2, sparse_depth0, intrinsics
+        if self.pose_paths is None:
+            return image0, image1, image2, sparse_depth0, intrinsics
+        else:
+            pose1, pose0, pose2 = load_pose_triplet(self.pose_paths[index])
+            return image0, image1, image2, pose0, pose1, pose2, sparse_depth0, intrinsics
 
     def __len__(self):
         return len(self.image_paths)
@@ -272,7 +297,10 @@ class KBNetInferenceDataset(torch.utils.data.Dataset):
         sparse_depth = load_depth(self.sparse_depth_paths[index])
 
         # Load camera intrinsics
-        intrinsics = np.loadtxt(self.intrinsics_paths[index]).astype(np.float32)
+        try:
+            intrinsics = np.loadtxt(self.intrinsics_paths[index]).astype(np.float32)
+        except:
+            intrinsics = np.load(self.intrinsics_paths[index]).astype(np.float32)
 
         # Convert to float32
         image, sparse_depth, intrinsics = [
