@@ -106,13 +106,27 @@ ln -s /path/to/void_release data/
 ln -s /path/to/nyu_v2 data/
 ```
 
-In case you do not already have KITTI and VOID datasets downloaded, we provide download scripts for them:
+In case you do not already have KITTI, NYUv2 and VOID datasets downloaded, we provide download scripts for them:
 ```
 bash bash/setup_dataset_kitti.sh
+bash bash/setup_dataset_nyu_v2.sh
+bash bash/setup_dataset_nyu_v2_raw.sh
 bash bash/setup_dataset_void.sh
 ```
 
-The `bash/setup_dataset_void.sh` script downloads the VOID dataset using gdown. However, gdown intermittently fails. As a workaround, you may download them via:
+For the KITTI dataset, the `bash/setup_dataset_nyu_v2.sh` script will download and set up `kitti_raw_data` and `kitti_depth_completion` for you in your data folder.
+
+For the NYUv2 dataset, the `bash/setup_dataset_nyu_v2.sh` script downloads the NYUv2 dataset using gdown.
+As a workaround, you may download it via:
+```
+https://drive.google.com/open?id=1E5NgaEE8zEr4OizVcxc3nfQGfjSatUjX
+```
+
+The zip file is already preprocessed with image and depth frames aligned and synchronized. Alternatively you may want to download the raw data using `bash/setup_dataset_nyu_v2.sh`, but will need to process the frames using their MATLAB toolbox. We recommend the former.
+
+The `bash/setup_dataset_nyu_v2.sh` script will download the `nyu_v2.zip` file and unzip it to the data directory.
+
+For the VOID dataset, the `bash/setup_dataset_void.sh` script downloads the VOID dataset using gdown. However, similar to the above, gdown intermittently fails. As a workaround, you may download them via:
 ```
 https://drive.google.com/open?id=1GGov8MaBKCEcJEXxY8qrh8Ldt2mErtWs
 https://drive.google.com/open?id=1c3PxnOE0N8tgkvTgPbnUZXS6ekv7pd80
