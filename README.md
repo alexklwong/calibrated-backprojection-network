@@ -121,6 +121,11 @@ As a workaround, you may download it via:
 ```
 https://drive.google.com/open?id=1E5NgaEE8zEr4OizVcxc3nfQGfjSatUjX
 ```
+and move the zip file to the `data` folder:
+```
+mv /path/to/nyu_v2.zip data/
+bash bash/setup_dataset_nyu_v2.sh unpack-only
+```
 
 The zip file is already preprocessed with image and depth frames aligned and synchronized. Alternatively you may want to download the raw data using `bash/setup_dataset_nyu_v2.sh`, but will need to process the frames using their MATLAB toolbox. We recommend the former.
 
