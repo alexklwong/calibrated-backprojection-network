@@ -3,10 +3,11 @@
 export CUDA_VISIBLE_DEVICES=0
 
 python src/run_kbnet.py \
---image_path testing/void/void_test_image_1500.txt \
---sparse_depth_path testing/void/void_test_sparse_depth_1500.txt \
---intrinsics_path testing/void/void_test_intrinsics_1500.txt \
---ground_truth_path testing/void/void_test_ground_truth_1500.txt \
+--is_orb_data 1 \
+--image_path testing/orb/test_image.txt \
+--sparse_depth_path testing/orb/test_sparse_depth.txt \
+--intrinsics_path testing/orb/test_intrinsics.txt \
+--ground_truth_path testing/orb/test_ground_truth.txt \
 --input_channels_image 3 \
 --input_channels_depth 2 \
 --normalized_image_range 0 1 \
@@ -29,7 +30,7 @@ python src/run_kbnet.py \
 --max_evaluate_depth 5.0 \
 --save_outputs \
 --depth_model_restore_path \
-training_results/kbnet_train_assuming_cameraFrame/void1500/kbnet_model/depth_model-63000.pth \
+trained_kbnet/orb/kbnet_model/depth_model-810.pth \
 --output_path \
-pretrained/pretrained_models/void/evaluation_results/void1500 \
+pretrained/pretrained_models/orb/evaluation_results/orb \
 --device gpu

@@ -21,6 +21,8 @@ from kbnet import run
 
 parser = argparse.ArgumentParser()
 
+parser.add_argument('--is_orb_data',
+    type=str, default='0', help='Set to 1 if data is from orb slam. Default 0 implies void(or some other) dataset')
 parser.add_argument('--image_path',
     type=str, required=True, help='Path to list of image paths')
 parser.add_argument('--sparse_depth_path',
@@ -114,6 +116,7 @@ if __name__ == '__main__':
         args.sparse_depth_path,
         args.intrinsics_path,
         ground_truth_path=args.ground_truth_path,
+        is_orb_data = bool(int(args.is_orb_data)),
         # Input settings
         input_channels_image=args.input_channels_image,
         input_channels_depth=args.input_channels_depth,

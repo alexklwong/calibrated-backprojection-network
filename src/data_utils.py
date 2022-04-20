@@ -14,9 +14,10 @@ https://arxiv.org/pdf/2108.10531.pdf
   year={2021}
 }
 '''
+# from http.client import _DataType
 import numpy as np
 from PIL import Image
-
+import cv2
 
 def read_paths(filepath):
     '''
@@ -84,7 +85,7 @@ def load_image(path, normalize=True, data_format='HWC'):
 
     return image
 
-def load_depth_with_validity_map(path, data_format='HW'):
+def load_depth_with_validity_map(path, data_format='HW', scale_depth=True, file_format='png'):
     '''
     Loads a depth map and validity map from a 16-bit PNG file
 
@@ -97,12 +98,18 @@ def load_depth_with_validity_map(path, data_format='HW'):
         numpy[float32] : depth map
         numpy[float32] : binary validity map for available depth measurement locations
     '''
-
-    # Loads depth map from 16-bit PNG file
-    z = np.array(Image.open(path), dtype=np.float32)
-
-    # Assert 16-bit (not 8-bit) depth map
-    z = z / 256.0
+    if file_format.lower() != 'png' and file_format.lower() != 'jpg' :
+        s = cv2.FileStorage()
+        _ = s.open(path, cv2.FileStorage_READ)
+        Dnode = s.getNode('Depth')
+        z = np.asarray(Dnode.mat(), dtype=np.float32)
+    else:
+        # Loads depth map from 16-bit PNG file
+        z = np.array(Image.open(path), dtype=np.float32)
+    
+    if scale_depth is True:
+        # Assert 16-bit (not 8-bit) depth map
+        z = z / 256.0
     z[z <= 0] = 0.0
     v = z.astype(np.float32)
     v[z > 0] = 1.0
@@ -120,7 +127,7 @@ def load_depth_with_validity_map(path, data_format='HW'):
 
     return z, v
 
-def load_depth(path, data_format='HW'):
+def load_depth(path, data_format='HW', scale_depth=True, file_format='png'):
     '''
     Loads a depth map from a 16-bit PNG file
 
@@ -132,12 +139,18 @@ def load_depth(path, data_format='HW'):
     Returns:
         numpy[float32] : depth map
     '''
-
-    # Loads depth map from 16-bit PNG file
-    z = np.array(Image.open(path), dtype=np.float32)
+    if file_format.lower() != 'png' and file_format.lower() != 'jpg':
+        s = cv2.FileStorage()
+        _ = s.open(path, cv2.FileStorage_READ)
+        Dnode = s.getNode('Depth')
+        z = np.asarray(Dnode.mat(), dtype=np.float32)
+    else:
+        # Loads depth map from 16-bit PNG file
+        z = np.array(Image.open(path), dtype=np.float32)
 
     # Assert 16-bit (not 8-bit) depth map
-    z = z / 256.0
+    if scale_depth is True:
+        z = z / 256.0
     z[z <= 0] = 0.0
 
     if data_format == 'HW':

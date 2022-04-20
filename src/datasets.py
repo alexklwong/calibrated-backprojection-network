@@ -15,27 +15,50 @@ https://arxiv.org/pdf/2108.10531.pdf
 }
 '''
 import numpy as np
+import cv2
 import torch.utils.data
 import data_utils
 
-def load_pose_triplet(path):
+def load_pose_triplet(path,format='txt'):
     '''
     Load and returns 4x4 pose matrices at timt t-1,t, t+1
     '''
-    poses = np.loadtxt(path)
-    poses = poses.reshape(poses.shape[0], poses.shape[1]//4, 4)
-    affine_row = np.asarray([0,0,0,1], dtype=poses.dtype)
-    
-    pose1 = poses[0,:,:].copy()
-    pose1 = np.asarray(pose1, dtype=np.float32)
-    pose1 = np.vstack((pose1, affine_row))
-    pose0 = poses[1,:,:].copy()
-    pose0 = np.asarray(pose0, dtype=np.float32)
-    pose0 = np.vstack((pose0, affine_row))
-    pose2 = poses[2,:,:].copy()
-    pose2 = np.asarray(pose2, dtype=np.float32)
-    pose2 = np.vstack((pose2, affine_row))
+    pose1=None
+    pose0=None
+    pose2=None
+    if format.lower()=='txt':
+        poses = np.loadtxt(path)
+        if poses.shape[1]==12:
+            poses = poses.reshape(poses.shape[0], poses.shape[1]//4, 4)
+            affine_row = np.asarray([0,0,0,1], dtype=poses.dtype)
 
+            pose1 = poses[0,:,:].copy()
+            pose1 = np.asarray(pose1, dtype=np.float32)
+            pose1 = np.vstack((pose1, affine_row))
+            pose0 = poses[1,:,:].copy()
+            pose0 = np.asarray(pose0, dtype=np.float32)
+            pose0 = np.vstack((pose0, affine_row))
+            pose2 = poses[2,:,:].copy()
+            pose2 = np.asarray(pose2, dtype=np.float32)
+            pose2 = np.vstack((pose2, affine_row))
+        elif poses.shape[1]==16:
+            poses = poses.reshape(poses.shape[0], poses.shape[1]//4, 4)
+            pose1 = poses[0,:,:].copy()
+            pose0 = poses[1,:,:].copy()
+            pose2 = poses[2,:,:].copy()
+
+
+    elif format.lower()=='cv_yml':
+        s = cv2.FileStorage()
+        _ = s.open(path, cv2.FileStorage_READ)
+        pnode = s.getNode('Poses')
+        poses = pnode.mat()
+        poses = poses.reshape(poses.shape[0], poses.shape[1]//4, 4)
+        if poses.shape[1]==4 and poses.shape[2]==4:
+            pose1 = poses[0,:,:].copy()
+            pose0 = poses[1,:,:].copy()
+            pose2 = poses[2,:,:].copy()
+               
     return pose1, pose0, pose2
 
 def load_image_triplet(path, normalize=True):
@@ -58,13 +81,13 @@ def load_image_triplet(path, normalize=True):
         path,
         normalize=normalize,
         data_format='CHW')
-
+    c, h, w = images.shape
     # Split along width
     image1, image0, image2 = np.split(images, indices_or_sections=3, axis=-1)
 
     return image1, image0, image2
 
-def load_depth(depth_path):
+def load_depth(depth_path, to_scale=True, file_format='png'):
     '''
     Load depth
 
@@ -75,7 +98,7 @@ def load_depth(depth_path):
         numpy[float32] : depth map (1 x H x W)
     '''
 
-    return data_utils.load_depth(depth_path, data_format='CHW')
+    return data_utils.load_depth(depth_path, data_format='CHW', scale_depth=to_scale, file_format=file_format)
 
 def load_validity_map(validity_map_path):
     '''
@@ -202,15 +225,17 @@ class KBNetTrainingDataset(torch.utils.data.Dataset):
                  sparse_depth_paths,
                  intrinsics_paths,
                  pose_paths=None,
+                 to_scale=True,
+                 depth_file_format='png',
                  shape=None,
                  random_crop_type=['none']):
-
         self.image_paths = image_paths
         self.pose_paths = pose_paths
         self.sparse_depth_paths = sparse_depth_paths
         self.intrinsics_paths = intrinsics_paths
-
+        self.to_scale = to_scale
         self.shape = shape
+        self.depth_file_format = depth_file_format
         self.do_random_crop = \
             self.shape is not None and all([x > 0 for x in self.shape])
 
@@ -224,10 +249,9 @@ class KBNetTrainingDataset(torch.utils.data.Dataset):
             normalize=False)
 
         # Load depth
-        sparse_depth0 = load_depth(self.sparse_depth_paths[index])
+        sparse_depth0 = load_depth(self.sparse_depth_paths[index], to_scale=self.to_scale, file_format=self.depth_file_format)
 
         # Load camera intrinsics
-        # print(self.intrinsics_paths[index])
         intrinsics = np.load(self.intrinsics_paths[index]).astype(np.float32)
 
         # Crop image, depth and adjust intrinsics
@@ -273,12 +297,15 @@ class KBNetInferenceDataset(torch.utils.data.Dataset):
                  image_paths,
                  sparse_depth_paths,
                  intrinsics_paths,
+                 to_scale=True,
+                 depth_file_format='png',
                  use_image_triplet=True):
 
         self.image_paths = image_paths
         self.sparse_depth_paths = sparse_depth_paths
         self.intrinsics_paths = intrinsics_paths
-
+        self.to_scale = to_scale
+        self.depth_file_format = depth_file_format
         self.use_image_triplet = use_image_triplet
 
     def __getitem__(self, index):
@@ -294,7 +321,7 @@ class KBNetInferenceDataset(torch.utils.data.Dataset):
                 data_format='CHW')
 
         # Load depth
-        sparse_depth = load_depth(self.sparse_depth_paths[index])
+        sparse_depth = load_depth(self.sparse_depth_paths[index], to_scale=self.to_scale, file_format=self.depth_file_format)
 
         # Load camera intrinsics
         try:

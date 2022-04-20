@@ -36,6 +36,9 @@ def train(train_image_path,
           val_sparse_depth_path,
           val_intrinsics_path,
           val_ground_truth_path,
+          is_orb_data=False,
+          pose_in_world_frame = False,
+          to_scale_depth = True,
           # Batch settings
           n_batch=settings.N_BATCH,
           n_height=settings.N_HEIGHT,
@@ -102,6 +105,10 @@ def train(train_image_path,
     if not os.path.exists(checkpoint_path):
         os.makedirs(checkpoint_path)
 
+    if is_orb_data:
+        depth_file_format = 'yml'
+    else:
+        depth_file_format = 'png'
     # Set up checkpoint and event paths
     depth_model_checkpoint_path = os.path.join(checkpoint_path, 'depth_model-{}.pth')
     pose_model_checkpoint_path = os.path.join(checkpoint_path, 'pose_model-{}.pth')
@@ -142,6 +149,8 @@ def train(train_image_path,
             sparse_depth_paths=train_sparse_depth_paths,
             intrinsics_paths=train_intrinsics_paths,
             pose_paths=train_pose_paths,
+            to_scale=to_scale_depth,
+            depth_file_format=depth_file_format,
             shape=(n_height, n_width),
             random_crop_type=augmentation_random_crop_type),
         batch_size=n_batch,
@@ -176,14 +185,16 @@ def train(train_image_path,
 
         ground_truths = []
         for path in val_ground_truth_paths:
-            ground_truth, validity_map = data_utils.load_depth_with_validity_map(path)
+            ground_truth, validity_map = data_utils.load_depth_with_validity_map(path, scale_depth=to_scale_depth, file_format=depth_file_format)
             ground_truths.append(np.stack([ground_truth, validity_map], axis=-1))
 
         val_dataloader = torch.utils.data.DataLoader(
             datasets.KBNetInferenceDataset(
                 image_paths=val_image_paths,
                 sparse_depth_paths=val_sparse_depth_paths,
-                intrinsics_paths=val_intrinsics_paths),
+                intrinsics_paths=val_intrinsics_paths,
+                to_scale = to_scale_depth,
+                depth_file_format=depth_file_format),
             batch_size=1,
             shuffle=False,
             num_workers=1,
@@ -418,7 +429,7 @@ def train(train_image_path,
                 image0, image1, image2, sparse_depth0, intrinsics = inputs
             else:
                 image0, image1, image2, pose0, pose1, pose2, sparse_depth0, intrinsics = inputs
-             
+
             # Validity map is where sparse depth is available
             validity_map_depth0 = torch.where(
                 sparse_depth0 > 0,
@@ -451,6 +462,12 @@ def train(train_image_path,
                 pose01 = pose_model.forward(image0, image1)
                 pose02 = pose_model.forward(image0, image2)
             else:
+                # Below 3 lines are in case 'absolute pose' is in world frame, and not camera frame. 
+                # Comment them out if poses are in camera frame. 
+                if pose_in_world_frame:
+                    pose0 = torch.inverse(pose0)
+                    pose1 = torch.inverse(pose1)
+                    pose2 = torch.inverse(pose2)
                 pose01 = pose1@torch.inverse(pose0)
                 pose02 = pose2@torch.inverse(pose0)
 
@@ -627,7 +644,9 @@ def validate(depth_model,
         min_max_mask = np.logical_and(
             ground_truth > min_evaluate_depth,
             ground_truth < max_evaluate_depth)
-        mask = np.where(np.logical_and(validity_mask, min_max_mask) > 0)
+        mask = np.where( np.logical_and(validity_mask, min_max_mask) > 0)
+        # print("\n",output_depth,"\n")
+        # print("\n", ground_truth, "\n")
 
         output_depth = output_depth[mask]
         ground_truth = ground_truth[mask]
@@ -701,6 +720,7 @@ def run(image_path,
         sparse_depth_path,
         intrinsics_path,
         ground_truth_path=None,
+        is_orb_data=False,
         # Input settings
         input_channels_image=settings.INPUT_CHANNELS_IMAGE,
         input_channels_depth=settings.INPUT_CHANNELS_DEPTH,
@@ -735,6 +755,10 @@ def run(image_path,
         # Hardware settings
         device=settings.DEVICE):
 
+    if is_orb_data:
+        depth_file_format = 'yml'
+    else:
+        depth_file_format = 'png'
     # Set up output path
     if device == settings.CUDA or device == settings.GPU:
         device = torch.device(settings.CUDA)
@@ -795,7 +819,7 @@ def run(image_path,
 
         ground_truths = []
         for path in ground_truth_paths:
-            ground_truth, validity_map = data_utils.load_depth_with_validity_map(path)
+            ground_truth, validity_map = data_utils.load_depth_with_validity_map(path, file_format=depth_file_format)
             ground_truths.append(np.stack([ground_truth, validity_map], axis=-1))
     else:
         ground_truths = [None] * n_sample
@@ -805,7 +829,7 @@ def run(image_path,
         datasets.KBNetInferenceDataset(
             image_paths=image_paths,
             sparse_depth_paths=sparse_depth_paths,
-            intrinsics_paths=intrinsics_paths, use_image_triplet=False),
+            intrinsics_paths=intrinsics_paths, depth_file_format=depth_file_format, use_image_triplet=False),
         batch_size=1,
         shuffle=False,
         num_workers=1,
@@ -1336,36 +1360,3 @@ def log_system_settings(log_path,
     log('device={}'.format(device.type), log_path)
     log('n_thread={}'.format(n_thread), log_path)
     log('', log_path)
-
-
-
-
-'''
-Step=  1000/67350  Loss=1.10533  Time Elapsed=0.15h  Time Remaining=10.02h
-Step=  2000/67350  Loss=1.30604  Time Elapsed=0.30h  Time Remaining=9.83h
-Step=  3000/67350  Loss=1.03483  Time Elapsed=0.45h  Time Remaining=9.67h
-Step=  4000/67350  Loss=1.15397  Time Elapsed=0.60h  Time Remaining=9.49h
-
-Step=  5000/67350  Loss=1.18043  Time Elapsed=0.75h  Time Remaining=9.33h
-Traceback (most recent call last):
-  File "src/train_kbnet.py", line 251, in <module>
-    n_thread=args.n_thread)
-  File "/home/madharak/ws/calibrated-backprojection-network/src/kbnet.py", line 524, in train
-    log_path=log_path)
-  File "/home/madharak/ws/calibrated-backprojection-network/src/kbnet.py", line 571, in validate
-    for idx, (inputs, ground_truth) in enumerate(zip(dataloader, ground_truths)):
-  File "/home/madharak/anaconda3/envs/depth_completion/lib/python3.7/site-packages/torch/utils/data/dataloader.py", line 346, in __next__
-    data = self._dataset_fetcher.fetch(index)  # may raise StopIteration
-  File "/home/madharak/anaconda3/envs/depth_completion/lib/python3.7/site-packages/torch/utils/data/_utils/fetch.py", line 44, in fetch
-    data = [self.dataset[idx] for idx in possibly_batched_index]
-  File "/home/madharak/anaconda3/envs/depth_completion/lib/python3.7/site-packages/torch/utils/data/_utils/fetch.py", line 44, in <listcomp>
-    data = [self.dataset[idx] for idx in possibly_batched_index]
-  File "/home/madharak/ws/calibrated-backprojection-network/src/datasets.py", line 299, in __getitem__
-    intrinsics = np.loadtxt(self.intrinsics_paths[index]).astype(np.float32)
-  File "/home/madharak/anaconda3/envs/depth_completion/lib/python3.7/site-packages/numpy/lib/npyio.py", line 1098, in loadtxt
-    first_line = next(fh)
-  File "/home/madharak/anaconda3/envs/depth_completion/lib/python3.7/codecs.py", line 322, in decode
-    (result, consumed) = self._buffer_decode(data, self.errors, final)
-UnicodeDecodeError: 'utf-8' codec can't decode byte 0x93 in position 0: invalid start byte
-(depth_completion) madharak@wks1:~/ws/calibrated-backprojection-network$ 
-'''

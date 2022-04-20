@@ -18,7 +18,7 @@ import os, sys, glob, argparse
 import multiprocessing as mp
 import numpy as np
 import cv2
-sys.path.insert(0,'../src')
+sys.path.insert(0,'src')
 # print(sys.path)
 import data_utils
 from tqdm import tqdm

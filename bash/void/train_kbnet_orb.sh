@@ -3,17 +3,20 @@
 export CUDA_VISIBLE_DEVICES=0
 
 python src/train_kbnet.py \
---train_image_path training/void/void_train_image_1500.txt \
---train_sparse_depth_path training/void/void_train_sparse_depth_1500.txt \
---train_intrinsics_path training/void/void_train_intrinsics_1500.txt \
---val_image_path testing/void/void_test_image_1500.txt \
---val_sparse_depth_path testing/void/void_test_sparse_depth_1500.txt \
---val_intrinsics_path testing/void/void_test_intrinsics_1500.txt \
---val_ground_truth_path testing/void/void_test_ground_truth_1500.txt \
+--train_image_path training/orb/train_image.txt \
+--train_sparse_depth_path training/orb/train_sparse_depth.txt \
+--train_pose_path training/orb/train_pose.txt \
+--train_intrinsics_path training/orb/train_intrinsics.txt \
+--val_image_path testing/orb/test_image.txt \
+--val_sparse_depth_path testing/orb/test_sparse_depth.txt \
+--val_intrinsics_path testing/orb/test_intrinsics.txt \
+--val_ground_truth_path testing/orb/test_ground_truth.txt \
+--is_orb_data 1 \
 --pose_in_world_frame 0 \
+--to_scale_depth 1 \
 --n_batch 8 \
 --n_height 480 \
---n_width 640 \
+--n_width 848 \
 --input_channels_image 3 \
 --input_channels_depth 2 \
 --normalized_image_range 0 1 \
@@ -28,12 +31,12 @@ python src/train_kbnet.py \
 --resolutions_backprojection 0 1 2 3 \
 --n_filters_decoder 256 128 128 64 12 \
 --deconv_type up \
---min_predict_depth 0.1 \
---max_predict_depth 8.0 \
+--min_predict_depth 0.001 \
+--max_predict_depth 80.0 \
 --weight_initializer xavier_normal \
 --activation_func leaky_relu \
---learning_rates 1e-4 5e-5  \
---learning_schedule 10 15 \
+--learning_rates 1e-4 3e-6 5e-8  \
+--learning_schedule 10 45 100 \
 --augmentation_probabilities 1.00 \
 --augmentation_schedule -1 \
 --augmentation_random_crop_type horizontal vertical anchored \
@@ -41,16 +44,16 @@ python src/train_kbnet.py \
 --augmentation_random_noise_type none \
 --augmentation_random_noise_spread -1 \
 --w_color 0.15 \
---w_structure 0.95 \
---w_sparse_depth 2.00 \
---w_smoothness 2.00 \
+--w_structure 2.0 \
+--w_sparse_depth 1.0 \
+--w_smoothness 1.0 \
 --w_weight_decay_depth 0.00 \
 --w_weight_decay_pose 0.00 \
 --min_evaluate_depth 0.2 \
 --max_evaluate_depth 5.0 \
---n_summary 1000 \
---n_checkpoint 1000 \
---validation_start 5000 \
---checkpoint_path trained_kbnet/void1500/kbnet_model \
+--n_summary 100 \
+--n_checkpoint 100 \
+--validation_start 100 \
+--checkpoint_path trained_kbnet/orb/kbnet_model \
 --device gpu \
 --n_thread 16
