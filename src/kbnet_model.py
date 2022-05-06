@@ -173,9 +173,10 @@ class KBNetModel(object):
         input_depth = self.sparse_to_dense_pool(input_depth)
 
         # Forward through the network
+        shape = input_depth.shape[-2:]
         latent, skips = self.encoder(image, input_depth, intrinsics)
 
-        output = self.decoder(latent, skips)[-1]
+        output = self.decoder(latent, skips, shape)[-1]
 
         output_depth = torch.sigmoid(output)
 

@@ -21,190 +21,6 @@ import net_utils
 '''
 Encoder architectures
 '''
-class ResNetEncoder(torch.nn.Module):
-    '''
-    ResNet encoder with skip connections
-
-    Arg(s):
-        n_layer : int
-            architecture type based on layers: 18, 34, 50
-        input_channels : int
-            number of channels in input data
-        n_filters : list
-            number of filters to use for each block
-        weight_initializer : str
-            kaiming_normal, kaiming_uniform, xavier_normal, xavier_uniform
-        activation_func : func
-            activation function after convolution
-        use_batch_norm : bool
-            if set, then applied batch normalization
-    '''
-
-    def __init__(self,
-                 n_layer,
-                 input_channels=3,
-                 n_filters=[32, 64, 128, 256, 256],
-                 weight_initializer='kaiming_uniform',
-                 activation_func='leaky_relu',
-                 use_batch_norm=False):
-        super(ResNetEncoder, self).__init__()
-
-        use_bottleneck = False
-        if n_layer == 18:
-            n_blocks = [2, 2, 2, 2]
-            resnet_block = net_utils.ResNetBlock
-        elif n_layer == 34:
-            n_blocks = [3, 4, 6, 3]
-            resnet_block = net_utils.ResNetBlock
-        elif n_layer == 50:
-            n_blocks = [3, 4, 6, 3]
-            use_bottleneck = True
-            resnet_block = net_utils.ResNetBottleneckBlock
-        else:
-            raise ValueError('Only supports 18, 34, 50 layer architecture')
-
-        assert(len(n_filters) == len(n_blocks) + 1)
-
-        activation_func = net_utils.activation_func(activation_func)
-
-        # Resolution 1/1 -> 1/2
-        in_channels, out_channels = [input_channels, n_filters[0]]
-        self.conv1 = net_utils.Conv2d(
-            in_channels,
-            out_channels,
-            kernel_size=7,
-            stride=2,
-            weight_initializer=weight_initializer,
-            activation_func=activation_func,
-            use_batch_norm=use_batch_norm)
-
-        # Resolution 1/2 -> 1/4
-        self.max_pool = torch.nn.MaxPool2d(kernel_size=3, stride=2, padding=1)
-        in_channels, out_channels = [n_filters[0], n_filters[1]]
-
-        blocks2 = []
-        for n in range(n_blocks[0]):
-            if n == 0:
-                block = resnet_block(
-                    in_channels,
-                    out_channels,
-                    stride=1,
-                    weight_initializer=weight_initializer,
-                    activation_func=activation_func,
-                    use_batch_norm=use_batch_norm)
-                blocks2.append(block)
-            else:
-                in_channels = 4 * out_channels if use_bottleneck else out_channels
-                block = resnet_block(
-                    in_channels,
-                    out_channels,
-                    stride=1,
-                    weight_initializer=weight_initializer,
-                    activation_func=activation_func,
-                    use_batch_norm=use_batch_norm)
-                blocks2.append(block)
-        self.blocks2 = torch.nn.Sequential(*blocks2)
-
-        # Resolution 1/4 -> 1/8
-        blocks3 = []
-        in_channels, out_channels = [n_filters[1], n_filters[2]]
-        for n in range(n_blocks[1]):
-            if n == 0:
-                in_channels = 4 * in_channels if use_bottleneck else in_channels
-                block = resnet_block(
-                    in_channels,
-                    out_channels,
-                    stride=2,
-                    weight_initializer=weight_initializer,
-                    activation_func=activation_func,
-                    use_batch_norm=use_batch_norm)
-                blocks3.append(block)
-            else:
-                in_channels = 4 * out_channels if use_bottleneck else out_channels
-                block = resnet_block(
-                    in_channels,
-                    out_channels,
-                    stride=1,
-                    weight_initializer=weight_initializer,
-                    activation_func=activation_func,
-                    use_batch_norm=use_batch_norm)
-                blocks3.append(block)
-        self.blocks3 = torch.nn.Sequential(*blocks3)
-
-        # Resolution 1/8 -> 1/16
-        blocks4 = []
-        in_channels, out_channels = [n_filters[2], n_filters[3]]
-        for n in range(n_blocks[2]):
-            if n == 0:
-                in_channels = 4 * in_channels if use_bottleneck else in_channels
-                block = resnet_block(
-                    in_channels,
-                    out_channels,
-                    stride=2,
-                    weight_initializer=weight_initializer,
-                    activation_func=activation_func,
-                    use_batch_norm=use_batch_norm)
-                blocks4.append(block)
-            else:
-                in_channels = 4 * out_channels if use_bottleneck else out_channels
-                block = resnet_block(
-                    in_channels,
-                    out_channels,
-                    stride=1,
-                    weight_initializer=weight_initializer,
-                    activation_func=activation_func,
-                    use_batch_norm=use_batch_norm)
-                blocks4.append(block)
-        self.blocks4 = torch.nn.Sequential(*blocks4)
-
-        # Resolution 1/16 -> 1/32
-        blocks5 = []
-        in_channels, out_channels = [n_filters[3], n_filters[4]]
-        for n in range(n_blocks[3]):
-            if n == 0:
-                in_channels = 4 * in_channels if use_bottleneck else in_channels
-                block = resnet_block(
-                    in_channels,
-                    out_channels,
-                    stride=2,
-                    weight_initializer=weight_initializer,
-                    activation_func=activation_func,
-                    use_batch_norm=use_batch_norm)
-                blocks5.append(block)
-            else:
-                in_channels = 4 * out_channels if use_bottleneck else out_channels
-                block = resnet_block(
-                    in_channels,
-                    out_channels,
-                    stride=1,
-                    weight_initializer=weight_initializer,
-                    activation_func=activation_func,
-                    use_batch_norm=use_batch_norm)
-                blocks5.append(block)
-        self.blocks5 = torch.nn.Sequential(*blocks5)
-
-    def forward(self, x):
-        layers = [x]
-
-        # Resolution 1/1 -> 1/2
-        layers.append(self.conv1(layers[-1]))
-
-        # Resolution 1/2 -> 1/4
-        max_pool = self.max_pool(layers[-1])
-        layers.append(self.blocks2(max_pool))
-
-        # Resolution 1/4 -> 1/8
-        layers.append(self.blocks3(layers[-1]))
-
-        # Resolution 1/8 -> 1/16
-        layers.append(self.blocks4(layers[-1]))
-
-        # Resolution 1/16 -> 1/32
-        layers.append(self.blocks5(layers[-1]))
-
-        return layers[-1], layers[1:-1]
-
-
 class KBNetEncoder(torch.nn.Module):
     '''
     Calibrated backprojection network (KBNet) encoder with skip connections
@@ -301,7 +117,7 @@ class KBNetEncoder(torch.nn.Module):
             self.conv1_image = net_utils.VGGNetBlock(
                 in_channels=input_channels_image,
                 out_channels=n_filters_image[n],
-                n_conv=n_convolutions_image[n],
+                n_convolution=n_convolutions_image[n],
                 stride=2,
                 weight_initializer=weight_initializer,
                 activation_func=activation_func)
@@ -309,7 +125,7 @@ class KBNetEncoder(torch.nn.Module):
             self.conv1_depth = net_utils.VGGNetBlock(
                 in_channels=input_channels_depth,
                 out_channels=n_filters_depth[n],
-                n_conv=n_convolutions_depth[n],
+                n_convolution=n_convolutions_depth[n],
                 stride=2,
                 weight_initializer=weight_initializer,
                 activation_func=activation_func)
@@ -343,7 +159,7 @@ class KBNetEncoder(torch.nn.Module):
             self.conv2_image = net_utils.VGGNetBlock(
                 in_channels=in_channels_image,
                 out_channels=n_filters_image[n],
-                n_conv=n_convolutions_image[n],
+                n_convolution=n_convolutions_image[n],
                 stride=2,
                 weight_initializer=weight_initializer,
                 activation_func=activation_func)
@@ -351,7 +167,7 @@ class KBNetEncoder(torch.nn.Module):
             self.conv2_depth = net_utils.VGGNetBlock(
                 in_channels=in_channels_depth,
                 out_channels=n_filters_depth[n],
-                n_conv=n_convolutions_depth[n],
+                n_convolution=n_convolutions_depth[n],
                 stride=2,
                 weight_initializer=weight_initializer,
                 activation_func=activation_func)
@@ -385,7 +201,7 @@ class KBNetEncoder(torch.nn.Module):
             self.conv3_image = net_utils.VGGNetBlock(
                 in_channels=in_channels_image,
                 out_channels=n_filters_image[n],
-                n_conv=n_convolutions_image[n],
+                n_convolution=n_convolutions_image[n],
                 stride=2,
                 weight_initializer=weight_initializer,
                 activation_func=activation_func)
@@ -393,7 +209,7 @@ class KBNetEncoder(torch.nn.Module):
             self.conv3_depth = net_utils.VGGNetBlock(
                 in_channels=in_channels_depth,
                 out_channels=n_filters_depth[n],
-                n_conv=n_convolutions_depth[n],
+                n_convolution=n_convolutions_depth[n],
                 stride=2,
                 weight_initializer=weight_initializer,
                 activation_func=activation_func)
@@ -427,7 +243,7 @@ class KBNetEncoder(torch.nn.Module):
             self.conv4_image = net_utils.VGGNetBlock(
                 in_channels=in_channels_image,
                 out_channels=n_filters_image[n],
-                n_conv=n_convolutions_image[n],
+                n_convolution=n_convolutions_image[n],
                 stride=2,
                 weight_initializer=weight_initializer,
                 activation_func=activation_func)
@@ -435,7 +251,7 @@ class KBNetEncoder(torch.nn.Module):
             self.conv4_depth = net_utils.VGGNetBlock(
                 in_channels=in_channels_depth,
                 out_channels=n_filters_depth[n],
-                n_conv=n_convolutions_depth[n],
+                n_convolution=n_convolutions_depth[n],
                 stride=2,
                 weight_initializer=weight_initializer,
                 activation_func=activation_func)
@@ -469,7 +285,7 @@ class KBNetEncoder(torch.nn.Module):
             self.conv5_image = net_utils.VGGNetBlock(
                 in_channels=in_channels_image,
                 out_channels=n_filters_image[n],
-                n_conv=n_convolutions_image[n],
+                n_convolution=n_convolutions_image[n],
                 stride=2,
                 weight_initializer=weight_initializer,
                 activation_func=activation_func)
@@ -477,12 +293,26 @@ class KBNetEncoder(torch.nn.Module):
             self.conv5_depth = net_utils.VGGNetBlock(
                 in_channels=in_channels_depth,
                 out_channels=n_filters_depth[n],
-                n_conv=n_convolutions_depth[n],
+                n_convolution=n_convolutions_depth[n],
                 stride=2,
                 weight_initializer=weight_initializer,
                 activation_func=activation_func)
 
     def forward(self, image, depth, intrinsics):
+        '''
+        Forward image, depth and calibration through encoder
+
+        Arg(s):
+            image : torch.Tensor[float32]
+                N x C x H x W image
+            depth : torch.Tensor[float32]
+                N x 1 x H x W depth map
+            intrinsics : torch.Tensor[float32]
+                N x C x 3 x 3 calibration
+        Returns:
+            torch.Tensor[float32] : N x K x h x w output tensor
+            list[torch.Tensor[float32]] : list of skip connections
+        '''
 
         def camera_coordinates(batch, height, width, k):
             # Reshape pixel coordinates to N x 3 x (H x W)
@@ -717,7 +547,9 @@ class PoseEncoder(torch.nn.Module):
         activation_func : func
             activation function after convolution
         use_batch_norm : bool
-            if set, then applied batch normalization
+            if set, then apply batch normalization
+        use_instance_norm : bool
+            if set, then apply instance normalization
     '''
 
     def __init__(self,
@@ -725,7 +557,8 @@ class PoseEncoder(torch.nn.Module):
                  n_filters=[16, 32, 64, 128, 256, 256, 256],
                  weight_initializer='kaiming_uniform',
                  activation_func='leaky_relu',
-                 use_batch_norm=False):
+                 use_batch_norm=False,
+                 use_instance_norm=False):
         super(PoseEncoder, self).__init__()
 
         activation_func = net_utils.activation_func(activation_func)
@@ -737,7 +570,8 @@ class PoseEncoder(torch.nn.Module):
             stride=2,
             weight_initializer=weight_initializer,
             activation_func=activation_func,
-            use_batch_norm=use_batch_norm)
+            use_batch_norm=use_batch_norm,
+            use_instance_norm=use_instance_norm)
 
         self.conv2 = net_utils.Conv2d(
             n_filters[0],
@@ -746,7 +580,8 @@ class PoseEncoder(torch.nn.Module):
             stride=2,
             weight_initializer=weight_initializer,
             activation_func=activation_func,
-            use_batch_norm=use_batch_norm)
+            use_batch_norm=use_batch_norm,
+            use_instance_norm=use_instance_norm)
 
         self.conv3 = net_utils.Conv2d(
             n_filters[1],
@@ -755,7 +590,8 @@ class PoseEncoder(torch.nn.Module):
             stride=2,
             weight_initializer=weight_initializer,
             activation_func=activation_func,
-            use_batch_norm=use_batch_norm)
+            use_batch_norm=use_batch_norm,
+            use_instance_norm=use_instance_norm)
 
         self.conv4 = net_utils.Conv2d(
             n_filters[2],
@@ -764,7 +600,8 @@ class PoseEncoder(torch.nn.Module):
             stride=2,
             weight_initializer=weight_initializer,
             activation_func=activation_func,
-            use_batch_norm=use_batch_norm)
+            use_batch_norm=use_batch_norm,
+            use_instance_norm=use_instance_norm)
 
         self.conv5 = net_utils.Conv2d(
             n_filters[3],
@@ -773,7 +610,8 @@ class PoseEncoder(torch.nn.Module):
             stride=2,
             weight_initializer=weight_initializer,
             activation_func=activation_func,
-            use_batch_norm=use_batch_norm)
+            use_batch_norm=use_batch_norm,
+            use_instance_norm=use_instance_norm)
 
         self.conv6 = net_utils.Conv2d(
             n_filters[4],
@@ -782,7 +620,8 @@ class PoseEncoder(torch.nn.Module):
             stride=2,
             weight_initializer=weight_initializer,
             activation_func=activation_func,
-            use_batch_norm=use_batch_norm)
+            use_batch_norm=use_batch_norm,
+            use_instance_norm=use_instance_norm)
 
         self.conv7 = net_utils.Conv2d(
             n_filters[5],
@@ -791,9 +630,21 @@ class PoseEncoder(torch.nn.Module):
             stride=2,
             weight_initializer=weight_initializer,
             activation_func=activation_func,
-            use_batch_norm=use_batch_norm)
+            use_batch_norm=use_batch_norm,
+            use_instance_norm=use_instance_norm)
 
     def forward(self, x):
+        '''
+        Forward input x through encoder
+
+        Arg(s):
+            x : torch.Tensor[float32]
+                input image N x C x H x W
+        Returns:
+            torch.Tensor[float32] : N x K x h x w output tensor
+            None
+        '''
+
         layers = [x]
 
         # Resolution 1/1 -> 1/2
@@ -820,6 +671,934 @@ class PoseEncoder(torch.nn.Module):
         return layers[-1], None
 
 
+class ResNetEncoder(torch.nn.Module):
+    '''
+    ResNet encoder with skip connections
+
+    Arg(s):
+        n_layer : int
+            architecture type based on layers: 18, 34, 50
+        input_channels : int
+            number of channels in input data
+        n_filters : list
+            number of filters to use for each block
+        weight_initializer : str
+            kaiming_normal, kaiming_uniform, xavier_normal, xavier_uniform
+        activation_func : func
+            activation function after convolution
+        use_batch_norm : bool
+            if set, then apply batch normalization
+        use_instance_norm : bool
+            if set, then apply instance normalization
+        use_depthwise_separable : bool
+            if set, then use depthwise separable convolutions instead of convolutions
+    '''
+
+    def __init__(self,
+                 n_layer,
+                 input_channels=3,
+                 n_filters=[32, 64, 128, 256, 256],
+                 weight_initializer='kaiming_uniform',
+                 activation_func='leaky_relu',
+                 use_batch_norm=False,
+                 use_instance_norm=False,
+                 use_depthwise_separable=False):
+        super(ResNetEncoder, self).__init__()
+
+        use_bottleneck = False
+        if n_layer == 18:
+            n_blocks = [2, 2, 2, 2]
+            resnet_block = net_utils.ResNetBlock
+        elif n_layer == 34:
+            n_blocks = [3, 4, 6, 3]
+            resnet_block = net_utils.ResNetBlock
+        elif n_layer == 50:
+            n_blocks = [3, 4, 6, 3]
+            use_bottleneck = True
+            resnet_block = net_utils.ResNetBottleneckBlock
+        else:
+            raise ValueError('Only supports 18, 34, 50 layer architecture')
+
+        for n in range(len(n_filters) - len(n_blocks) - 1):
+            n_blocks = n_blocks + [n_blocks[-1]]
+
+        assert len(n_filters) == len(n_blocks) + 1
+
+        # Keep track on current block
+        block_idx = 0
+        filter_idx = 0
+
+        activation_func = net_utils.activation_func(activation_func)
+
+        in_channels, out_channels = [input_channels, n_filters[filter_idx]]
+
+        # Resolution 1/1 -> 1/2
+        self.conv1 = net_utils.Conv2d(
+            in_channels,
+            out_channels,
+            kernel_size=7,
+            stride=2,
+            weight_initializer=weight_initializer,
+            activation_func=activation_func,
+            use_batch_norm=use_batch_norm,
+            use_instance_norm=use_instance_norm)
+
+        # Resolution 1/2 -> 1/4
+        self.max_pool = torch.nn.MaxPool2d(kernel_size=3, stride=2, padding=1)
+
+        filter_idx = filter_idx + 1
+
+        blocks2 = []
+        in_channels, out_channels = [n_filters[filter_idx-1], n_filters[filter_idx]]
+        for n in range(n_blocks[block_idx]):
+            if n == 0:
+                block = resnet_block(
+                    in_channels,
+                    out_channels,
+                    stride=1,
+                    weight_initializer=weight_initializer,
+                    activation_func=activation_func,
+                    use_batch_norm=use_batch_norm,
+                    use_instance_norm=use_instance_norm,
+                    use_depthwise_separable=False)
+            else:
+                in_channels = 4 * out_channels if use_bottleneck else out_channels
+                block = resnet_block(
+                    in_channels,
+                    out_channels,
+                    stride=1,
+                    weight_initializer=weight_initializer,
+                    activation_func=activation_func,
+                    use_batch_norm=use_batch_norm,
+                    use_instance_norm=use_instance_norm,
+                    use_depthwise_separable=False)
+
+            blocks2.append(block)
+
+        self.blocks2 = torch.nn.Sequential(*blocks2)
+
+        # Resolution 1/4 -> 1/8
+        block_idx = block_idx + 1
+        filter_idx = filter_idx + 1
+
+        blocks3 = []
+        in_channels, out_channels = [n_filters[filter_idx-1], n_filters[filter_idx]]
+        for n in range(n_blocks[block_idx]):
+            if n == 0:
+                in_channels = 4 * in_channels if use_bottleneck else in_channels
+                block = resnet_block(
+                    in_channels,
+                    out_channels,
+                    stride=2,
+                    weight_initializer=weight_initializer,
+                    activation_func=activation_func,
+                    use_batch_norm=use_batch_norm,
+                    use_instance_norm=use_instance_norm,
+                    use_depthwise_separable=False)
+            else:
+                in_channels = 4 * out_channels if use_bottleneck else out_channels
+                block = resnet_block(
+                    in_channels,
+                    out_channels,
+                    stride=1,
+                    weight_initializer=weight_initializer,
+                    activation_func=activation_func,
+                    use_batch_norm=use_batch_norm,
+                    use_instance_norm=use_instance_norm,
+                    use_depthwise_separable=False)
+
+            blocks3.append(block)
+
+        self.blocks3 = torch.nn.Sequential(*blocks3)
+
+        # Resolution 1/8 -> 1/16
+        block_idx = block_idx + 1
+        filter_idx = filter_idx + 1
+
+        blocks4 = []
+        in_channels, out_channels = [n_filters[filter_idx-1], n_filters[filter_idx]]
+        for n in range(n_blocks[block_idx]):
+            if n == 0:
+                in_channels = 4 * in_channels if use_bottleneck else in_channels
+                block = resnet_block(
+                    in_channels,
+                    out_channels,
+                    stride=2,
+                    weight_initializer=weight_initializer,
+                    activation_func=activation_func,
+                    use_batch_norm=use_batch_norm,
+                    use_instance_norm=use_instance_norm,
+                    use_depthwise_separable=use_depthwise_separable)
+            else:
+                in_channels = 4 * out_channels if use_bottleneck else out_channels
+                block = resnet_block(
+                    in_channels,
+                    out_channels,
+                    stride=1,
+                    weight_initializer=weight_initializer,
+                    activation_func=activation_func,
+                    use_batch_norm=use_batch_norm,
+                    use_instance_norm=use_instance_norm,
+                    use_depthwise_separable=use_depthwise_separable)
+
+            blocks4.append(block)
+
+        self.blocks4 = torch.nn.Sequential(*blocks4)
+
+        # Resolution 1/16 -> 1/32
+        block_idx = block_idx + 1
+        filter_idx = filter_idx + 1
+
+        blocks5 = []
+        in_channels, out_channels = [n_filters[filter_idx-1], n_filters[filter_idx]]
+        for n in range(n_blocks[block_idx]):
+            if n == 0:
+                in_channels = 4 * in_channels if use_bottleneck else in_channels
+                block = resnet_block(
+                    in_channels,
+                    out_channels,
+                    stride=2,
+                    weight_initializer=weight_initializer,
+                    activation_func=activation_func,
+                    use_batch_norm=use_batch_norm,
+                    use_instance_norm=use_instance_norm,
+                    use_depthwise_separable=use_depthwise_separable)
+            else:
+                in_channels = 4 * out_channels if use_bottleneck else out_channels
+                block = resnet_block(
+                    in_channels,
+                    out_channels,
+                    stride=1,
+                    weight_initializer=weight_initializer,
+                    activation_func=activation_func,
+                    use_batch_norm=use_batch_norm,
+                    use_instance_norm=use_instance_norm,
+                    use_depthwise_separable=use_depthwise_separable)
+
+            blocks5.append(block)
+
+        self.blocks5 = torch.nn.Sequential(*blocks5)
+
+        # Resolution 1/32 -> 1/64
+        block_idx = block_idx + 1
+        filter_idx = filter_idx + 1
+
+        if filter_idx < len(n_filters):
+
+            blocks6 = []
+            in_channels, out_channels = [n_filters[filter_idx-1], n_filters[filter_idx]]
+            for n in range(n_blocks[block_idx]):
+                if n == 0:
+                    in_channels = 4 * in_channels if use_bottleneck else in_channels
+                    block = resnet_block(
+                        in_channels,
+                        out_channels,
+                        stride=2,
+                        weight_initializer=weight_initializer,
+                        activation_func=activation_func,
+                        use_batch_norm=use_batch_norm,
+                        use_instance_norm=use_instance_norm,
+                        use_depthwise_separable=use_depthwise_separable)
+                else:
+                    in_channels = 4 * out_channels if use_bottleneck else out_channels
+                    block = resnet_block(
+                        in_channels,
+                        out_channels,
+                        stride=1,
+                        weight_initializer=weight_initializer,
+                        activation_func=activation_func,
+                        use_batch_norm=use_batch_norm,
+                        use_instance_norm=use_instance_norm,
+                        use_depthwise_separable=use_depthwise_separable)
+
+                blocks6.append(block)
+
+            self.blocks6 = torch.nn.Sequential(*blocks6)
+        else:
+            self.blocks6 = None
+
+        # Resolution 1/64 -> 1/128
+        block_idx = block_idx + 1
+        filter_idx = filter_idx + 1
+
+        if filter_idx < len(n_filters):
+
+            blocks7 = []
+            in_channels, out_channels = [n_filters[filter_idx-1], n_filters[filter_idx]]
+            for n in range(n_blocks[block_idx]):
+                if n == 0:
+                    in_channels = 4 * in_channels if use_bottleneck else in_channels
+                    block = resnet_block(
+                        in_channels,
+                        out_channels,
+                        stride=2,
+                        weight_initializer=weight_initializer,
+                        activation_func=activation_func,
+                        use_batch_norm=use_batch_norm,
+                        use_instance_norm=use_instance_norm,
+                        use_depthwise_separable=use_depthwise_separable)
+                else:
+                    in_channels = 4 * out_channels if use_bottleneck else out_channels
+                    block = resnet_block(
+                        in_channels,
+                        out_channels,
+                        stride=1,
+                        weight_initializer=weight_initializer,
+                        activation_func=activation_func,
+                        use_batch_norm=use_batch_norm,
+                        use_instance_norm=use_instance_norm,
+                        use_depthwise_separable=use_depthwise_separable)
+
+                blocks7.append(block)
+
+            self.blocks7 = torch.nn.Sequential(*blocks7)
+        else:
+            self.blocks7 = None
+
+    def forward(self, x):
+        '''
+        Forward input x through a ResNet encoder
+
+        Arg(s):
+            x : torch.Tensor[float32]
+                N x C x H x W input tensor
+        Returns:
+            torch.Tensor[float32] : N x K x h x w output tensor
+            list[torch.Tensor[float32]] : list of skip connections
+        '''
+
+        layers = [x]
+
+        # Resolution 1/1 -> 1/2
+        layers.append(self.conv1(layers[-1]))
+
+        # Resolution 1/2 -> 1/4
+        max_pool = self.max_pool(layers[-1])
+        layers.append(self.blocks2(max_pool))
+
+        # Resolution 1/4 -> 1/8
+        layers.append(self.blocks3(layers[-1]))
+
+        # Resolution 1/8 -> 1/16
+        layers.append(self.blocks4(layers[-1]))
+
+        # Resolution 1/16 -> 1/32
+        layers.append(self.blocks5(layers[-1]))
+
+        # Resolution 1/32 -> 1/64
+        if self.blocks6 is not None:
+            layers.append(self.blocks6(layers[-1]))
+
+        # Resolution 1/64 -> 1/128
+        if self.blocks7 is not None:
+            layers.append(self.blocks7(layers[-1]))
+
+        return layers[-1], layers[1:-1]
+
+
+class AtrousResNetEncoder(torch.nn.Module):
+    '''
+    ResNet encoder with skip connections
+
+    Arg(s):
+        n_layer : int
+            architecture type based on layers: 18, 34
+        input_channels : int
+            number of channels in input data
+        n_filters : list
+            number of filters to use for each block
+        atrous_spatial_pyramid_pool_dilations : list[int]
+            list of dilation rates for atrous spatial pyramid pool (ASPP)
+        weight_initializer : str
+            kaiming_normal, kaiming_uniform, xavier_normal, xavier_uniform
+        activation_func : func
+            activation function after convolution
+        use_batch_norm : bool
+            if set, then apply batch normalization
+        use_instance_norm : bool
+            if set, then apply instance normalization
+    '''
+
+    def __init__(self,
+                 n_layer,
+                 input_channels=3,
+                 n_filters=[32, 64, 128, 256, 256],
+                 atrous_spatial_pyramid_pool_dilations=None,
+                 weight_initializer='kaiming_uniform',
+                 activation_func='leaky_relu',
+                 use_batch_norm=False,
+                 use_instance_norm=False):
+        super(AtrousResNetEncoder, self).__init__()
+
+        if n_layer == 18:
+            n_blocks = [2, 2, 2, 2]
+            resnet_block = net_utils.ResNetBlock
+            atrous_resnet_block = net_utils.AtrousResNetBlock
+        elif n_layer == 34:
+            n_blocks = [3, 4, 6, 3]
+            resnet_block = net_utils.ResNetBlock
+            atrous_resnet_block = net_utils.AtrousResNetBlock
+        else:
+            raise ValueError('Only supports 18, 34 layer architecture')
+
+        assert len(n_filters) == len(n_blocks) + 1
+
+        activation_func = net_utils.activation_func(activation_func)
+        dilation = 2
+        in_channels, out_channels = [input_channels, n_filters[0]]
+
+        # Resolution 1/1 -> 1/2
+        self.conv1 = net_utils.Conv2d(
+            in_channels,
+            out_channels,
+            kernel_size=7,
+            stride=2,
+            weight_initializer=weight_initializer,
+            activation_func=activation_func,
+            use_batch_norm=use_batch_norm,
+            use_instance_norm=use_instance_norm)
+
+        # Resolution 1/2 -> 1/4
+        self.max_pool = torch.nn.MaxPool2d(kernel_size=3, stride=2, padding=1)
+        in_channels, out_channels = [n_filters[0], n_filters[1]]
+
+        blocks2 = []
+        for n in range(n_blocks[0]):
+            if n == 0:
+                block = resnet_block(
+                    in_channels,
+                    out_channels,
+                    stride=1,
+                    weight_initializer=weight_initializer,
+                    activation_func=activation_func,
+                    use_batch_norm=use_batch_norm,
+                    use_instance_norm=use_instance_norm)
+                blocks2.append(block)
+            else:
+                in_channels = out_channels
+                block = resnet_block(
+                    in_channels,
+                    out_channels,
+                    stride=1,
+                    weight_initializer=weight_initializer,
+                    activation_func=activation_func,
+                    use_batch_norm=use_batch_norm,
+                    use_instance_norm=use_instance_norm)
+                blocks2.append(block)
+        self.blocks2 = torch.nn.Sequential(*blocks2)
+
+        # Resolution 1/4 -> 1/8
+        blocks3 = []
+        in_channels, out_channels = [n_filters[1], n_filters[2]]
+        for n in range(n_blocks[1]):
+            if n == 0:
+                block = resnet_block(
+                    in_channels,
+                    out_channels,
+                    stride=2,
+                    weight_initializer=weight_initializer,
+                    activation_func=activation_func,
+                    use_batch_norm=use_batch_norm,
+                    use_instance_norm=use_instance_norm)
+                blocks3.append(block)
+            else:
+                in_channels = out_channels
+                block = resnet_block(
+                    in_channels,
+                    out_channels,
+                    stride=1,
+                    weight_initializer=weight_initializer,
+                    activation_func=activation_func,
+                    use_batch_norm=use_batch_norm,
+                    use_instance_norm=use_instance_norm)
+                blocks3.append(block)
+        self.blocks3 = torch.nn.Sequential(*blocks3)
+
+        # Resolution 1/8 with 2x dilation
+        blocks4 = []
+        in_channels, out_channels = [n_filters[2], n_filters[3]]
+        for n in range(n_blocks[2]):
+            if n == 0:
+                block = atrous_resnet_block(
+                    in_channels,
+                    out_channels,
+                    dilation=dilation,
+                    weight_initializer=weight_initializer,
+                    activation_func=activation_func,
+                    use_batch_norm=use_batch_norm,
+                    use_instance_norm=use_instance_norm)
+                dilation = dilation * 2
+                blocks4.append(block)
+            else:
+                in_channels = out_channels
+                block = resnet_block(
+                    in_channels,
+                    out_channels,
+                    stride=1,
+                    weight_initializer=weight_initializer,
+                    activation_func=activation_func,
+                    use_batch_norm=use_batch_norm,
+                    use_instance_norm=use_instance_norm)
+                blocks4.append(block)
+        self.blocks4 = torch.nn.Sequential(*blocks4)
+
+        # Resolution 1/8 with 4x dilation
+        blocks5 = []
+        in_channels, out_channels = [n_filters[3], n_filters[4]]
+        for n in range(n_blocks[3]):
+            if n == 0:
+                block = atrous_resnet_block(
+                    in_channels,
+                    out_channels,
+                    dilation=dilation,
+                    weight_initializer=weight_initializer,
+                    activation_func=activation_func,
+                    use_batch_norm=use_batch_norm,
+                    use_instance_norm=use_instance_norm)
+                dilation = dilation * 2
+                blocks5.append(block)
+            else:
+                in_channels = out_channels
+                block = resnet_block(
+                    in_channels,
+                    out_channels,
+                    stride=1,
+                    weight_initializer=weight_initializer,
+                    activation_func=activation_func,
+                    use_batch_norm=use_batch_norm,
+                    use_instance_norm=use_instance_norm)
+                blocks5.append(block)
+        self.blocks5 = torch.nn.Sequential(*blocks5)
+
+        if atrous_spatial_pyramid_pool_dilations is not None:
+            self.atrous_spatial_pyramid_pool = net_utils.AtrousSpatialPyramidPooling(
+                in_channels,
+                out_channels,
+                dilations=atrous_spatial_pyramid_pool_dilations,
+                weight_initializer=weight_initializer,
+                activation_func=activation_func,
+                use_batch_norm=use_batch_norm,
+                use_instance_norm=use_instance_norm)
+        else:
+            self.atrous_spatial_pyramid_pool = torch.nn.Identity()
+
+    def forward(self, x):
+        '''
+        Forward input x through an atrous ResNet encoder
+
+        Arg(s):
+            x : torch.Tensor[float32]
+                N x C x H x W input tensor
+        Returns:
+            torch.Tensor[float32] : N x K x h x w output tensor
+            list[torch.Tensor[float32]] : list of skip connections
+        '''
+
+        layers = [x]
+
+        # Resolution 1/1 -> 1/2
+        layers.append(self.conv1(layers[-1]))
+
+        # Resolution 1/2 -> 1/4
+        max_pool = self.max_pool(layers[-1])
+        layers.append(self.blocks2(max_pool))
+
+        # Resolution 1/4 -> 1/8
+        layers.append(self.blocks3(layers[-1]))
+
+        # Resolution 1/8 with 2x dilation
+        layers.append(self.blocks4(layers[-1]))
+
+        # Resolution 1/8 with 4x dilation
+        # ASPP only used if dilations are given, otherwise pass through (identity)
+        block5 = self.blocks5(layers[-1])
+        layers.append(self.atrous_spatial_pyramid_pool(block5))
+
+        return layers[-1], layers[1:-1]
+
+
+class VGGNetEncoder(torch.nn.Module):
+    '''
+    VGGNet encoder with skip connections
+
+    Arg(s):
+        input_channels : int
+            number of channels in input data
+        n_layer : int
+            architecture type based on layers: 8, 11, 13
+        n_filters : list
+            number of filters to use for each block
+        weight_initializer : str
+            kaiming_normal, kaiming_uniform, xavier_normal, xavier_uniform
+        activation_func : func
+            activation function after convolution
+        use_batch_norm : bool
+            if set, then apply batch normalization
+        use_instance_norm : bool
+            if set, then apply instance normalization
+        use_depthwise_separable : bool
+            if set, then use depthwise separable convolutions instead of convolutions
+    '''
+
+    def __init__(self,
+                 n_layer,
+                 input_channels=3,
+                 n_filters=[32, 64, 128, 256, 256],
+                 weight_initializer='kaiming_uniform',
+                 activation_func='leaky_relu',
+                 use_batch_norm=False,
+                 use_instance_norm=False,
+                 use_depthwise_separable=False):
+        super(VGGNetEncoder, self).__init__()
+
+        if n_layer == 8:
+            n_convolutions = [1, 1, 1, 1, 1]
+        elif n_layer == 11:
+            n_convolutions = [1, 1, 2, 2, 2]
+        elif n_layer == 13:
+            n_convolutions = [2, 2, 2, 2, 2]
+        else:
+            raise ValueError('Only supports 8, 11, 13 layer architecture')
+
+        for n in range(len(n_filters) - len(n_convolutions) - 1):
+            n_convolutions = n_convolutions + [n_convolutions[-1]]
+
+        # Keep track on current block
+        block_idx = 0
+        filter_idx = 0
+
+        assert len(n_filters) == len(n_convolutions)
+
+        activation_func = net_utils.activation_func(activation_func)
+
+        # Resolution 1/1 -> 1/2
+        stride = 1 if n_convolutions[block_idx] - 1 > 0 else 2
+        in_channels, out_channels = [input_channels, n_filters[filter_idx]]
+
+        conv1 = net_utils.Conv2d(
+            in_channels,
+            out_channels,
+            kernel_size=5,
+            stride=stride,
+            weight_initializer=weight_initializer,
+            activation_func=activation_func,
+            use_batch_norm=use_batch_norm,
+            use_instance_norm=use_instance_norm)
+
+        if n_convolutions[block_idx] - 1 > 0:
+            self.conv1 = torch.nn.Sequential(
+                conv1,
+                net_utils.VGGNetBlock(
+                    out_channels,
+                    out_channels,
+                    n_convolution=n_convolutions[filter_idx] - 1,
+                    stride=2,
+                    weight_initializer=weight_initializer,
+                    activation_func=activation_func,
+                    use_batch_norm=use_batch_norm,
+                    use_instance_norm=use_instance_norm,
+                    use_depthwise_separable=False))
+        else:
+            self.conv1 = conv1
+
+        # Resolution 1/2 -> 1/4
+        block_idx = block_idx + 1
+        filter_idx = filter_idx + 1
+        in_channels, out_channels = [n_filters[filter_idx-1], n_filters[filter_idx]]
+
+        self.conv2 = net_utils.VGGNetBlock(
+            in_channels,
+            out_channels,
+            n_convolution=n_convolutions[block_idx],
+            stride=2,
+            weight_initializer=weight_initializer,
+            activation_func=activation_func,
+            use_batch_norm=use_batch_norm,
+            use_instance_norm=use_instance_norm,
+            use_depthwise_separable=False)
+
+        # Resolution 1/4 -> 1/8
+        block_idx = block_idx + 1
+        filter_idx = filter_idx + 1
+        in_channels, out_channels = [n_filters[filter_idx-1], n_filters[filter_idx]]
+
+        self.conv3 = net_utils.VGGNetBlock(
+            in_channels,
+            out_channels,
+            n_convolution=n_convolutions[block_idx],
+            stride=2,
+            weight_initializer=weight_initializer,
+            activation_func=activation_func,
+            use_batch_norm=use_batch_norm,
+            use_instance_norm=use_instance_norm,
+            use_depthwise_separable=False)
+
+        # Resolution 1/8 -> 1/16
+        block_idx = block_idx + 1
+        filter_idx = filter_idx + 1
+        in_channels, out_channels = [n_filters[filter_idx-1], n_filters[filter_idx]]
+
+        self.conv4 = net_utils.VGGNetBlock(
+            in_channels,
+            out_channels,
+            n_convolution=n_convolutions[block_idx],
+            stride=2,
+            weight_initializer=weight_initializer,
+            activation_func=activation_func,
+            use_batch_norm=use_batch_norm,
+            use_instance_norm=use_instance_norm,
+            use_depthwise_separable=use_depthwise_separable)
+
+        # Resolution 1/16 -> 1/32
+        block_idx = block_idx + 1
+        filter_idx = filter_idx + 1
+        in_channels, out_channels = [n_filters[filter_idx-1], n_filters[filter_idx]]
+
+        self.conv5 = net_utils.VGGNetBlock(
+            in_channels,
+            out_channels,
+            n_convolution=n_convolutions[block_idx],
+            stride=2,
+            weight_initializer=weight_initializer,
+            activation_func=activation_func,
+            use_batch_norm=use_batch_norm,
+            use_instance_norm=use_instance_norm,
+            use_depthwise_separable=use_depthwise_separable)
+
+        # Resolution 1/32 -> 1/64
+        block_idx = block_idx + 1
+        filter_idx = filter_idx + 1
+
+        if filter_idx < len(n_filters):
+
+            in_channels, out_channels = [n_filters[filter_idx-1], n_filters[filter_idx]]
+
+            self.conv6 = net_utils.VGGNetBlock(
+                in_channels,
+                out_channels,
+                n_convolution=n_convolutions[block_idx],
+                stride=2,
+                weight_initializer=weight_initializer,
+                activation_func=activation_func,
+                use_batch_norm=use_batch_norm,
+                use_instance_norm=use_instance_norm,
+                use_depthwise_separable=use_depthwise_separable)
+        else:
+            self.conv6 = None
+
+        # Resolution 1/64 -> 1/128
+        block_idx = block_idx + 1
+        filter_idx = filter_idx + 1
+
+        if filter_idx < len(n_filters):
+
+            in_channels, out_channels = [n_filters[filter_idx-1], n_filters[filter_idx]]
+
+            self.conv7 = net_utils.VGGNetBlock(
+                in_channels,
+                out_channels,
+                n_convolution=n_convolutions[block_idx],
+                stride=2,
+                weight_initializer=weight_initializer,
+                activation_func=activation_func,
+                use_batch_norm=use_batch_norm,
+                use_instance_norm=use_instance_norm,
+                use_depthwise_separable=use_depthwise_separable)
+        else:
+            self.conv7 = None
+
+    def forward(self, x):
+        '''
+        Forward input x through a VGGNet encoder
+
+        Arg(s):
+            x : torch.Tensor[float32]
+                N x C x H x W input tensor
+        Returns:
+            torch.Tensor[float32] : N x K x h x w output tensor
+        '''
+
+        layers = [x]
+
+        # Resolution 1/1 -> 1/2
+        layers.append(self.conv1(layers[-1]))
+
+        # Resolution 1/2 -> 1/4
+        layers.append(self.conv2(layers[-1]))
+
+        # Resolution 1/4 -> 1/8
+        layers.append(self.conv3(layers[-1]))
+
+        # Resolution 1/8 -> 1/32
+        layers.append(self.conv4(layers[-1]))
+
+        # Resolution 1/16 -> 1/32
+        layers.append(self.conv5(layers[-1]))
+
+        # Resolution 1/32 -> 1/64
+        if self.conv6 is not None:
+            layers.append(self.conv6(layers[-1]))
+
+        # Resolution 1/64 -> 1/128
+        if self.conv7 is not None:
+            layers.append(self.conv7(layers[-1]))
+
+        return layers[-1], layers[1:-1]
+
+
+class AtrousVGGNetEncoder(torch.nn.Module):
+    '''
+    Atrous VGGNet encoder with skip connections
+
+    Arg(s):
+        input_channels : int
+            number of channels in input data
+        n_layer : int
+            architecture type based on layers: 8, 11, 13
+        n_filters : list
+            number of filters to use for each block
+        weight_initializer : str
+            kaiming_normal, kaiming_uniform, xavier_normal, xavier_uniform
+        activation_func : func
+            activation function after convolution
+        use_batch_norm : bool
+            if set, then apply batch normalization
+        use_instance_norm : bool
+            if set, then apply instance normalization
+    '''
+
+    def __init__(self,
+                 n_layer,
+                 input_channels=3,
+                 n_filters=[32, 64, 128, 256, 256],
+                 weight_initializer='kaiming_uniform',
+                 activation_func='leaky_relu',
+                 use_batch_norm=False,
+                 use_instance_norm=False):
+        super(AtrousVGGNetEncoder, self).__init__()
+
+        if n_layer == 8:
+            n_convolutions = [1, 1, 1, 1, 1]
+        elif n_layer == 11:
+            n_convolutions = [1, 1, 2, 2, 2]
+        elif n_layer == 13:
+            n_convolutions = [2, 2, 2, 2, 2]
+        else:
+            raise ValueError('Only supports 8, 11, 13 layer architecture')
+
+        assert len(n_filters) == len(n_convolutions)
+
+        activation_func = net_utils.activation_func(activation_func)
+        dilation = 2
+
+        # Resolution 1/1 -> 1/2
+        stride = 1 if n_convolutions[0] - 1 > 0 else 2
+        in_channels, out_channels = [input_channels, n_filters[0]]
+
+        conv1 = net_utils.Conv2d(
+            in_channels,
+            out_channels,
+            kernel_size=5,
+            stride=stride,
+            weight_initializer=weight_initializer,
+            activation_func=activation_func,
+            use_batch_norm=use_batch_norm,
+            use_instance_norm=use_instance_norm)
+
+        if n_convolutions[0] - 1 > 0:
+            self.conv1 = torch.nn.Sequential(
+                conv1,
+                net_utils.VGGNetBlock(
+                    out_channels,
+                    out_channels,
+                    n_convolution=n_convolutions[0] - 1,
+                    stride=2,
+                    weight_initializer=weight_initializer,
+                    activation_func=activation_func,
+                    use_batch_norm=use_batch_norm,
+                    use_instance_norm=use_instance_norm))
+        else:
+            self.conv1 = conv1
+
+        # Resolution 1/2 -> 1/4
+        in_channels, out_channels = [n_filters[0], n_filters[1]]
+        self.conv2 = net_utils.VGGNetBlock(
+            in_channels,
+            out_channels,
+            n_convolution=n_convolutions[1],
+            stride=2,
+            weight_initializer=weight_initializer,
+            activation_func=activation_func,
+            use_batch_norm=use_batch_norm,
+            use_instance_norm=use_instance_norm)
+
+        # Resolution 1/4 -> 1/8
+        in_channels, out_channels = [n_filters[1], n_filters[2]]
+        self.conv3 = net_utils.VGGNetBlock(
+            in_channels,
+            out_channels,
+            n_convolution=n_convolutions[2],
+            stride=2,
+            weight_initializer=weight_initializer,
+            activation_func=activation_func,
+            use_batch_norm=use_batch_norm,
+            use_instance_norm=use_instance_norm)
+
+        # Resolution 1/8 with 2x dilation
+        in_channels, out_channels = [n_filters[2], n_filters[3]]
+        self.conv4 = net_utils.AtrousVGGNetBlock(
+            in_channels,
+            out_channels,
+            n_convolution=n_convolutions[3],
+            dilation=dilation,
+            weight_initializer=weight_initializer,
+            activation_func=activation_func,
+            use_batch_norm=use_batch_norm,
+            use_instance_norm=use_instance_norm)
+
+        # Resolution 1/8 with 4x dilation
+        in_channels, out_channels = [n_filters[3], n_filters[4]]
+        self.conv5 = net_utils.AtrousVGGNetBlock(
+            in_channels,
+            out_channels,
+            n_convolution=n_convolutions[4],
+            dilation=dilation,
+            weight_initializer=weight_initializer,
+            activation_func=activation_func,
+            use_batch_norm=use_batch_norm,
+            use_instance_norm=use_instance_norm)
+
+    def forward(self, x):
+        '''
+        Forward input x through an atrous VGGNet encoder
+
+        Arg(s):
+            x : torch.Tensor[float32]
+                N x C x H x W input tensor
+        Returns:
+            torch.Tensor[float32] : N x K x h x w output tensor
+        '''
+
+        layers = [x]
+
+        # Resolution 1/1 -> 1/2
+        layers.append(self.conv1(layers[-1]))
+
+        # Resolution 1/2 -> 1/4
+        layers.append(self.conv2(layers[-1]))
+
+        # Resolution 1/4 -> 1/8
+        layers.append(self.conv3(layers[-1]))
+
+        # Resolution 1/8 with 2x dilation
+        layers.append(self.conv4(layers[-1]))
+
+        # Resolution 1/8 with 4x dilation
+        layers.append(self.conv5(layers[-1]))
+
+        return layers[-1], layers[1:-1]
+
+
 '''
 Decoder architectures
 '''
@@ -832,11 +1611,11 @@ class MultiScaleDecoder(torch.nn.Module):
             number of channels in input latent vector
         output_channels : int
             number of channels or classes in output
-        n_scale : int
-            number of output scales for multi-scale prediction
+        n_resolution : int
+            number of output resolutions (scales) for multi-scale prediction
         n_filters : list[int]
             number of filters to use at each decoder block
-        n_skips : list[int[]]
+        n_skips : list[int]
             number of filters from skip connections
         weight_initializer : str
             kaiming_normal, kaiming_uniform, xavier_normal, xavier_uniform
@@ -844,10 +1623,10 @@ class MultiScaleDecoder(torch.nn.Module):
             activation function after convolution
         output_func : func
             activation function for output
-        output_kernel_sizes : list[int]
-            list of kernel size in output module
         use_batch_norm : bool
-            if set, then applied batch normalization
+            if set, then apply batch normalization
+        use_instance_norm : bool
+            if set, then apply instance normalization
         deconv_type : str
             deconvolution types available: transpose, up
     '''
@@ -855,99 +1634,170 @@ class MultiScaleDecoder(torch.nn.Module):
     def __init__(self,
                  input_channels=256,
                  output_channels=1,
-                 n_scale=4,
+                 n_resolution=4,
                  n_filters=[256, 128, 64, 32, 16],
                  n_skips=[256, 128, 64, 32, 0],
                  weight_initializer='kaiming_uniform',
                  activation_func='leaky_relu',
                  output_func='linear',
                  use_batch_norm=False,
+                 use_instance_norm=False,
                  deconv_type='transpose'):
         super(MultiScaleDecoder, self).__init__()
 
-        network_depth = 5
-        assert(n_scale > 0 and n_scale < network_depth)
-        assert(len(n_filters) == network_depth)
-        assert(len(n_skips) == network_depth)
+        network_depth = len(n_filters)
 
-        self.n_scale = n_scale
+        assert network_depth < 8, 'Does not support network depth of 8 or more'
+        assert n_resolution > 0 and n_resolution < network_depth
+
+        self.n_resolution = n_resolution
         self.output_func = output_func
 
         activation_func = net_utils.activation_func(activation_func)
         output_func = net_utils.activation_func(output_func)
 
         # Upsampling from lower to full resolution requires multi-scale
-        if 'upsample' in self.output_func and self.n_scale < 2:
-            self.n_scale = 2
+        if 'upsample' in self.output_func and self.n_resolution < 2:
+            self.n_resolution = 2
+
+        filter_idx = 0
+
+        in_channels, skip_channels, out_channels = [
+            input_channels, n_skips[filter_idx], n_filters[filter_idx]
+        ]
+
+        # Resolution 1/128 -> 1/64
+        if network_depth > 6:
+            self.deconv6 = net_utils.DecoderBlock(
+                in_channels,
+                skip_channels,
+                out_channels,
+                weight_initializer=weight_initializer,
+                activation_func=activation_func,
+                use_batch_norm=use_batch_norm,
+                use_instance_norm=use_instance_norm,
+                deconv_type=deconv_type)
+
+            filter_idx = filter_idx + 1
+
+            in_channels, skip_channels, out_channels = [
+                n_filters[filter_idx-1], n_skips[filter_idx], n_filters[filter_idx]
+            ]
+        else:
+            self.deconv6 = None
+
+        # Resolution 1/64 -> 1/32
+        if network_depth > 5:
+            self.deconv5 = net_utils.DecoderBlock(
+                in_channels,
+                skip_channels,
+                out_channels,
+                weight_initializer=weight_initializer,
+                activation_func=activation_func,
+                use_batch_norm=use_batch_norm,
+                use_instance_norm=use_instance_norm,
+                deconv_type=deconv_type)
+
+            filter_idx = filter_idx + 1
+
+            in_channels, skip_channels, out_channels = [
+                n_filters[filter_idx-1], n_skips[filter_idx], n_filters[filter_idx]
+            ]
+        else:
+            self.deconv5 = None
 
         # Resolution 1/32 -> 1/16
-        in_channels, skip_channels, out_channels = [
-            input_channels, n_skips[0], n_filters[0]
-        ]
-        self.deconv4 = net_utils.DecoderBlock(
-            in_channels,
-            skip_channels,
-            out_channels,
-            weight_initializer=weight_initializer,
-            activation_func=activation_func,
-            use_batch_norm=use_batch_norm,
-            deconv_type=deconv_type)
+        if network_depth > 4:
+            self.deconv4 = net_utils.DecoderBlock(
+                in_channels,
+                skip_channels,
+                out_channels,
+                weight_initializer=weight_initializer,
+                activation_func=activation_func,
+                use_batch_norm=use_batch_norm,
+                use_instance_norm=use_instance_norm,
+                deconv_type=deconv_type)
+
+            filter_idx = filter_idx + 1
+
+            in_channels, skip_channels, out_channels = [
+                n_filters[filter_idx-1], n_skips[filter_idx], n_filters[filter_idx]
+            ]
+        else:
+            self.deconv4 = None
 
         # Resolution 1/16 -> 1/8
-        in_channels, skip_channels, out_channels = [
-            n_filters[0], n_skips[1], n_filters[1]
-        ]
-        self.deconv3 = net_utils.DecoderBlock(
-            in_channels,
-            skip_channels,
-            out_channels,
-            weight_initializer=weight_initializer,
-            activation_func=activation_func,
-            use_batch_norm=use_batch_norm,
-            deconv_type=deconv_type)
-
-        if self.n_scale > 3:
-            self.output3 = net_utils.Conv2d(
+        if network_depth > 3:
+            self.deconv3 = net_utils.DecoderBlock(
+                in_channels,
+                skip_channels,
                 out_channels,
-                output_channels,
-                kernel_size=3,
-                stride=1,
                 weight_initializer=weight_initializer,
-                activation_func=output_func,
-                use_batch_norm=False)
+                activation_func=activation_func,
+                use_batch_norm=use_batch_norm,
+                use_instance_norm=use_instance_norm,
+                deconv_type=deconv_type)
 
-        # Resolution 1/8 -> 1/4
-        in_channels, skip_channels, out_channels = [
-            n_filters[1], n_skips[2], n_filters[2]
-        ]
-        if self.n_scale > 3:
-            skip_channels = skip_channels + output_channels
+            if self.n_resolution > 3:
+                self.output3 = net_utils.Conv2d(
+                    out_channels,
+                    output_channels,
+                    kernel_size=3,
+                    stride=1,
+                    weight_initializer=weight_initializer,
+                    activation_func=None,
+                    use_batch_norm=False,
+                    use_instance_norm=False)
+            else:
+                self.output3 = None
 
-        self.deconv2 = net_utils.DecoderBlock(
-            in_channels,
-            skip_channels,
-            out_channels,
-            weight_initializer=weight_initializer,
-            activation_func=activation_func,
-            use_batch_norm=use_batch_norm,
-            deconv_type=deconv_type)
+            # Resolution 1/8 -> 1/4
+            filter_idx = filter_idx + 1
 
-        if self.n_scale > 2:
-            self.output2 = net_utils.Conv2d(
+            in_channels, skip_channels, out_channels = [
+                n_filters[filter_idx-1], n_skips[filter_idx], n_filters[filter_idx]
+            ]
+
+            if self.n_resolution > 3:
+                skip_channels = skip_channels + output_channels
+        else:
+            self.deconv3 = None
+
+        if network_depth > 2:
+            self.deconv2 = net_utils.DecoderBlock(
+                in_channels,
+                skip_channels,
                 out_channels,
-                output_channels,
-                kernel_size=3,
-                stride=1,
                 weight_initializer=weight_initializer,
-                activation_func=output_func,
-                use_batch_norm=False)
+                activation_func=activation_func,
+                use_batch_norm=use_batch_norm,
+                use_instance_norm=use_instance_norm,
+                deconv_type=deconv_type)
 
-        # Resolution 1/4 -> 1/2
-        in_channels, skip_channels, out_channels = [
-            n_filters[2], n_skips[3], n_filters[3]
-        ]
-        if self.n_scale > 2:
-            skip_channels = skip_channels + output_channels
+            if self.n_resolution > 2:
+                self.output2 = net_utils.Conv2d(
+                    out_channels,
+                    output_channels,
+                    kernel_size=3,
+                    stride=1,
+                    weight_initializer=weight_initializer,
+                    activation_func=output_func,
+                    use_batch_norm=False,
+                    use_instance_norm=False)
+            else:
+                self.output2 = None
+
+            # Resolution 1/4 -> 1/2
+            filter_idx = filter_idx + 1
+
+            in_channels, skip_channels, out_channels = [
+                n_filters[filter_idx-1], n_skips[filter_idx], n_filters[filter_idx]
+            ]
+
+            if self.n_resolution > 2:
+                skip_channels = skip_channels + output_channels
+        else:
+            self.deconv2 = None
 
         self.deconv1 = net_utils.DecoderBlock(
             in_channels,
@@ -956,9 +1806,10 @@ class MultiScaleDecoder(torch.nn.Module):
             weight_initializer=weight_initializer,
             activation_func=activation_func,
             use_batch_norm=use_batch_norm,
+            use_instance_norm=use_instance_norm,
             deconv_type=deconv_type)
 
-        if self.n_scale > 1:
+        if self.n_resolution > 1:
             self.output1 = net_utils.Conv2d(
                 out_channels,
                 output_channels,
@@ -966,79 +1817,150 @@ class MultiScaleDecoder(torch.nn.Module):
                 stride=1,
                 weight_initializer=weight_initializer,
                 activation_func=output_func,
-                use_batch_norm=False)
+                use_batch_norm=False,
+                use_instance_norm=False)
+        else:
+            self.output1 = None
 
         # Resolution 1/2 -> 1/1
-        if 'upsample' not in self.output_func:
-            in_channels, skip_channels, out_channels = [
-                n_filters[3], n_skips[4], n_filters[4]
-            ]
-            if self.n_scale > 1:
-                skip_channels = skip_channels + output_channels
+        filter_idx = filter_idx + 1
 
-            self.deconv0 = net_utils.DecoderBlock(
-                in_channels,
-                skip_channels,
-                out_channels,
-                weight_initializer=weight_initializer,
-                activation_func=activation_func,
-                use_batch_norm=use_batch_norm,
-                deconv_type=deconv_type)
+        in_channels, skip_channels, out_channels = [
+            n_filters[filter_idx-1], n_skips[filter_idx], n_filters[filter_idx]
+        ]
 
-            self.output0 = net_utils.Conv2d(
-                out_channels,
-                output_channels,
-                kernel_size=3,
-                stride=1,
-                weight_initializer=weight_initializer,
-                activation_func=output_func,
-                use_batch_norm=False)
+        if self.n_resolution > 1:
+            skip_channels = skip_channels + output_channels
 
-    def forward(self, x, skips):
+        self.deconv0 = net_utils.DecoderBlock(
+            in_channels,
+            skip_channels,
+            out_channels,
+            weight_initializer=weight_initializer,
+            activation_func=activation_func,
+            use_batch_norm=use_batch_norm,
+            use_instance_norm=use_instance_norm,
+            deconv_type=deconv_type)
+
+        self.output0 = net_utils.Conv2d(
+            out_channels,
+            output_channels,
+            kernel_size=3,
+            stride=1,
+            weight_initializer=weight_initializer,
+            activation_func=output_func,
+            use_batch_norm=False,
+            use_instance_norm=False)
+
+    def forward(self, x, skips, shape=None):
+        '''
+        Forward latent vector x through decoder network
+
+        Arg(s):
+            x : torch.Tensor[float32]
+                latent vector
+            skips : list[torch.Tensor[float32]]
+                list of skip connection tensors (earlier are larger resolution)
+            shape : tuple[int]
+                (height, width) tuple denoting output size
+        Returns:
+            list[torch.Tensor[float32]] : list of outputs at multiple scales
+        '''
+
         layers = [x]
         outputs = []
 
-        # Resolution 1/32 -> 1/16
+        # Start at the end and walk backwards through skip connections
         n = len(skips) - 1
-        layers.append(self.deconv4(layers[-1], skips[n]))
+
+        # Resolution 1/128 -> 1/64
+        if self.deconv6 is not None:
+            layers.append(self.deconv6(layers[-1], skips[n]))
+            n = n - 1
+
+        # Resolution 1/64 -> 1/32
+        if self.deconv5 is not None:
+            layers.append(self.deconv5(layers[-1], skips[n]))
+            n = n - 1
+
+        # Resolution 1/32 -> 1/16
+        if self.deconv4 is not None:
+            layers.append(self.deconv4(layers[-1], skips[n]))
+            n = n - 1
 
         # Resolution 1/16 -> 1/8
-        n = n - 1
-        layers.append(self.deconv3(layers[-1], skips[n]))
+        if self.deconv3 is not None:
+            layers.append(self.deconv3(layers[-1], skips[n]))
 
-        if self.n_scale > 3:
-            output3 = self.output3(layers[-1])
-            outputs.append(output3)
-            upsample_output3 = torch.nn.functional.interpolate(
-                input=outputs[-1],
-                scale_factor=2,
-                mode='nearest')
+            if self.n_resolution > 3:
+                output3 = self.output3(layers[-1])
+                outputs.append(output3)
+
+                if n > 0:
+                    upsample_output3 = torch.nn.functional.interpolate(
+                        input=outputs[-1],
+                        size=skips[n-1].shape[-2:],
+                        mode='bilinear',
+                        align_corners=True)
+                else:
+                    upsample_output3 = torch.nn.functional.interpolate(
+                        input=outputs[-1],
+                        scale_factor=2,
+                        mode='bilinear',
+                        align_corners=True)
+
+            n = n - 1
 
         # Resolution 1/8 -> 1/4
-        n = n - 1
-        skip = torch.cat([skips[n], upsample_output3], dim=1) if self.n_scale > 3 else skips[n]
-        layers.append(self.deconv2(layers[-1], skip))
+        if self.deconv2 is not None:
+            if skips[n] is not None:
+                skip = torch.cat([skips[n], upsample_output3], dim=1) if self.n_resolution > 3 else skips[n]
+            else:
+                skip = skips[n]
+            layers.append(self.deconv2(layers[-1], skip))
 
-        if self.n_scale > 2:
-            output2 = self.output2(layers[-1])
-            outputs.append(output2)
-            upsample_output2 = torch.nn.functional.interpolate(
-                input=outputs[-1],
-                scale_factor=2,
-                mode='nearest')
+            if self.n_resolution > 2:
+                output2 = self.output2(layers[-1])
+                outputs.append(output2)
+
+                if n > 0:
+                    upsample_output2 = torch.nn.functional.interpolate(
+                        input=outputs[-1],
+                        size=skips[n-1].shape[-2:],
+                        mode='bilinear',
+                        align_corners=True)
+                else:
+                    upsample_output2 = torch.nn.functional.interpolate(
+                        input=outputs[-1],
+                        scale_factor=2,
+                        mode='bilinear',
+                        align_corners=True)
+
+            n = n - 1
 
         # Resolution 1/4 -> 1/2
-        n = n - 1
-        skip = torch.cat([skips[n], upsample_output2], dim=1) if self.n_scale > 2 else skips[n]
+        if skips[n] is not None:
+            skip = torch.cat([skips[n], upsample_output2], dim=1) if self.n_resolution > 2 else skips[n]
+        else:
+            skip = skips[n]
         layers.append(self.deconv1(layers[-1], skip))
 
-        if self.n_scale > 1:
+        if self.n_resolution > 1:
             output1 = self.output1(layers[-1])
             outputs.append(output1)
-            upsample_output1 = torch.nn.functional.interpolate(
-                input=outputs[-1],
-                scale_factor=2,
-                mode='nearest')
+
+            if n > 0:
+                upsample_output1 = torch.nn.functional.interpolate(
+                    input=outputs[-1],
+                    size=skips[n-1].shape[-2:],
+                    mode='bilinear',
+                    align_corners=True)
+            else:
+                upsample_output1 = torch.nn.functional.interpolate(
+                    input=outputs[-1],
+                    scale_factor=2,
+                    mode='bilinear',
+                    align_corners=True)
 
         # Resolution 1/2 -> 1/1
         n = n - 1
@@ -1046,15 +1968,19 @@ class MultiScaleDecoder(torch.nn.Module):
         if 'upsample' in self.output_func:
             output0 = upsample_output1
         else:
-            if self.n_scale > 1:
+            if self.n_resolution > 1:
                 # If there is skip connection at layer 0
-                skip = torch.cat([skips[n], upsample_output1], dim=1) if n == 0 else upsample_output1
+                if skips[n] is not None and n == 0:
+                    skip = torch.cat([skips[n], upsample_output1], dim=1) if n == 0 else upsample_output1
+                else:
+                    skip = upsample_output1
                 layers.append(self.deconv0(layers[-1], skip))
             else:
-                if n == 0:
+
+                if skips[n] is not None and n == 0:
                     layers.append(self.deconv0(layers[-1], skips[n]))
                 else:
-                    layers.append(self.deconv0(layers[-1]))
+                    layers.append(self.deconv0(layers[-1], shape=shape[-2:]))
 
             output0 = self.output0(layers[-1])
 
@@ -1079,7 +2005,9 @@ class PoseDecoder(torch.nn.Module):
         activation_func : func
             activation function after convolution
         use_batch_norm : bool
-            if set, then applied batch normalization
+            if set, then apply batch normalization
+        use_instance_norm : bool
+            if set, then apply instance normalization
     '''
 
     def __init__(self,
@@ -1088,7 +2016,8 @@ class PoseDecoder(torch.nn.Module):
                  n_filters=[],
                  weight_initializer='kaiming_uniform',
                  activation_func='leaky_relu',
-                 use_batch_norm=False):
+                 use_batch_norm=False,
+                 use_instance_norm=False):
         super(PoseDecoder, self).__init__()
 
         self.rotation_parameterization = rotation_parameterization
@@ -1107,7 +2036,8 @@ class PoseDecoder(torch.nn.Module):
                     stride=2,
                     weight_initializer=weight_initializer,
                     activation_func=activation_func,
-                    use_batch_norm=use_batch_norm)
+                    use_batch_norm=use_batch_norm,
+                    use_instance_norm=use_instance_norm)
                 layers.append(conv)
                 in_channels = out_channels
 
@@ -1118,7 +2048,8 @@ class PoseDecoder(torch.nn.Module):
                 stride=1,
                 weight_initializer=weight_initializer,
                 activation_func=None,
-                use_batch_norm=False)
+                use_batch_norm=False,
+                use_instance_norm=False)
             layers.append(conv)
 
             self.conv = torch.nn.Sequential(*layers)
@@ -1130,7 +2061,8 @@ class PoseDecoder(torch.nn.Module):
                 stride=1,
                 weight_initializer=weight_initializer,
                 activation_func=None,
-                use_batch_norm=False)
+                use_batch_norm=False,
+                use_instance_norm=False)
 
     def forward(self, x):
         conv_output = self.conv(x)
@@ -1212,7 +2144,8 @@ class SparseToDensePool(torch.nn.Module):
                 stride=1,
                 weight_initializer=weight_initializer,
                 activation_func=activation_func,
-                use_batch_norm=False)
+                use_batch_norm=False,
+                use_instance_norm=False)
             pool_convs.append(conv)
 
             # Set new input channels as output channels
@@ -1229,7 +2162,8 @@ class SparseToDensePool(torch.nn.Module):
             stride=1,
             weight_initializer=weight_initializer,
             activation_func=activation_func,
-            use_batch_norm=False)
+            use_batch_norm=False,
+            use_instance_norm=False)
 
     def forward(self, x):
         # Input depth
