@@ -1311,7 +1311,7 @@ class CalibratedBackprojectionBlock(torch.nn.Module):
         self.conv_image = VGGNetBlock(
             in_channels=in_channels_image,
             out_channels=n_filter_image,
-            n_conv=n_convolution_image,
+            n_convolution=n_convolution_image,
             stride=2,
             weight_initializer=weight_initializer,
             activation_func=activation_func)
@@ -1319,7 +1319,7 @@ class CalibratedBackprojectionBlock(torch.nn.Module):
         self.conv_depth = VGGNetBlock(
             in_channels=in_channels_depth + 3,
             out_channels=n_filter_depth,
-            n_conv=n_convolution_depth,
+            n_convolution=n_convolution_depth,
             stride=2,
             weight_initializer=weight_initializer,
             activation_func=activation_func)

@@ -127,7 +127,7 @@ class KBNetModel(object):
         self.decoder = networks.MultiScaleDecoder(
             input_channels=n_filters_encoder[-1],
             output_channels=1,
-            n_scale=1,
+            n_resolution=1,
             n_filters=n_filters_decoder,
             n_skips=n_skips,
             weight_initializer=weight_initializer,
