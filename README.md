@@ -88,12 +88,23 @@ To demonstrate the effectiveness of our method, we trained a model on the [VOID]
 </p>
 
 ## Setting up your virtual environment <a name="setting-up"></a>
-We will create a virtual environment with the necessary dependencies
+We will create a virtual environment with the necessary dependencies.
+
+For Nvidia GTX 10 series (CUDA 10.1)
 ```
 virtualenv -p /usr/bin/python3.7 kbnet-py37env
 source kbnet-py37env/bin/activate
 pip install opencv-python scipy scikit-learn scikit-image matplotlib gdown numpy gast Pillow pyyaml
 pip install torch==1.3.0 torchvision==0.4.1 tensorboard==2.3.0
+```
+
+For Nvidia RTX 30 series (CUDA 11.1)
+```
+virtualenv -p /usr/bin/python3.7 kbnet-py37env
+source kbnet-py37env/bin/activate
+pip install opencv-python scipy scikit-learn scikit-image matplotlib gdown numpy gast Pillow pyyaml
+pip install torch==1.8.2+cu111 torchvision==0.9.2+cu111 -f https://download.pytorch.org/whl/lts/1.8/torch_lts.html
+pip install tensorboard==2.3.0
 ```
 
 ## Setting up your datasets
