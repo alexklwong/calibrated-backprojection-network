@@ -6,7 +6,7 @@ Published in ICCV 2021 (ORAL)
 
 [[publication]](https://openaccess.thecvf.com/content/ICCV2021/papers/Wong_Unsupervised_Depth_Completion_With_Calibrated_Backprojection_Layers_ICCV_2021_paper.pdf) [[arxiv]](https://arxiv.org/pdf/2108.10531.pdf) [[poster]](figures/poster.pdf) [[talk]]()
 
-Model have been tested on Ubuntu 16.04, 20.04 using Python 3.5, 3.6, 3.7 PyTorch 1.2, 1.3
+Model have been tested on Ubuntu 16.04, 20.04 using Python 3.5, 3.6, 3.7 PyTorch 1.2, 1.3, (CUDA 10.1), 1.8.0, 1.8.1 (CUDA 11.1)
 
 Authors: [Alex Wong](http://web.cs.ucla.edu/~alexw/)
 
@@ -88,13 +88,27 @@ To demonstrate the effectiveness of our method, we trained a model on the [VOID]
 </p>
 
 ## Setting up your virtual environment <a name="setting-up"></a>
-We will create a virtual environment with the necessary dependencies
+We will create a virtual environment with the necessary dependencies.
+
+For Nvidia GTX 10 series (CUDA 10.1)
 ```
 virtualenv -p /usr/bin/python3.7 kbnet-py37env
 source kbnet-py37env/bin/activate
 pip install opencv-python scipy scikit-learn scikit-image matplotlib gdown numpy gast Pillow pyyaml
 pip install torch==1.3.0 torchvision==0.4.1 tensorboard==2.3.0
 ```
+
+For Nvidia RTX 30 series (CUDA 11.1)
+```
+virtualenv -p /usr/bin/python3.7 kbnet-py37env
+source kbnet-py37env/bin/activate
+pip install opencv-python scipy scikit-learn scikit-image matplotlib gdown numpy gast Pillow pyyaml
+pip install torch==1.8.2+cu111 torchvision==0.9.2+cu111 -f https://download.pytorch.org/whl/lts/1.8/torch_lts.html
+pip install tensorboard==2.3.0
+```
+
+Note that there are some incompatibilities where PyTorch 1.5.0 - 1.7.1 does not reproduce the training results.
+This seems to be fixed in PyTorch 1.8.0, so we recommend for the above virtual environment configurations.
 
 ## Setting up your datasets
 For datasets, we will use [KITTI][kitti_dataset] for outdoors and [VOID][void_github] for indoors. We will also use [NYUv2][nyu_v2_dataset] to demonstrate our generalization capabilities.
