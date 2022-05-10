@@ -6,7 +6,7 @@ Published in ICCV 2021 (ORAL)
 
 [[publication]](https://openaccess.thecvf.com/content/ICCV2021/papers/Wong_Unsupervised_Depth_Completion_With_Calibrated_Backprojection_Layers_ICCV_2021_paper.pdf) [[arxiv]](https://arxiv.org/pdf/2108.10531.pdf) [[poster]](figures/poster.pdf) [[talk]]()
 
-Model have been tested on Ubuntu 16.04, 20.04 using Python 3.5, 3.6, 3.7 PyTorch 1.2, 1.3
+Model have been tested on Ubuntu 16.04, 20.04 using Python 3.5, 3.6, 3.7 PyTorch 1.2, 1.3, (CUDA 10.1), 1.8.0, 1.8.1 (CUDA 11.1)
 
 Authors: [Alex Wong](http://web.cs.ucla.edu/~alexw/)
 
