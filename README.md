@@ -107,6 +107,9 @@ pip install torch==1.8.2+cu111 torchvision==0.9.2+cu111 -f https://download.pyto
 pip install tensorboard==2.3.0
 ```
 
+Note that there are some incompatibilities where PyTorch 1.5.0 - 1.7.1 does not reproduce the training results.
+This seems to be fixed in PyTorch 1.8.0, so we recommend for the above virtual environment configurations.
+
 ## Setting up your datasets
 For datasets, we will use [KITTI][kitti_dataset] for outdoors and [VOID][void_github] for indoors. We will also use [NYUv2][nyu_v2_dataset] to demonstrate our generalization capabilities.
 ```
