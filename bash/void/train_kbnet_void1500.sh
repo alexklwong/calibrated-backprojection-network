@@ -4,10 +4,10 @@ export CUDA_VISIBLE_DEVICES=0
 
 python src/train_kbnet.py \
 --train_image_path training/void/void_train_image_1500.txt \
---train_sparse_depth_path training/voidvoid_train_sparse_depth_1500.txt \
+--train_sparse_depth_path training/void/void_train_sparse_depth_1500.txt \
 --train_intrinsics_path training/void/void_train_intrinsics_1500.txt \
 --val_image_path testing/void/void_test_image_1500.txt \
---val_sparse_depth_path testong/void/void_test_sparse_depth_1500.txt \
+--val_sparse_depth_path testing/void/void_test_sparse_depth_1500.txt \
 --val_intrinsics_path testing/void/void_test_intrinsics_1500.txt \
 --val_ground_truth_path testing/void/void_test_ground_truth_1500.txt \
 --n_batch 8 \
