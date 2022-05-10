@@ -203,6 +203,7 @@ def process_frame(inputs):
         ground_truth_path, \
         paths_only = inputs
     
+    print(image_path1, image_path0, image_path2,'\n\n\n')
     if not paths_only:
         # Create image composite of triplets
         image1 = cv2.imread(image_path1)
@@ -432,12 +433,12 @@ for data_dirpath, train_filepaths, test_filepaths in tqdm(data_filepaths):
         np.save(intrinsics_outpath, kin)
 
         if seq_dirpath.split(os.sep)[-1] in test_seq_dirpaths:
-            start_idx = 0
-            offset_idx = 0
+            start_idx = skip
+            offset_idx = 2
         else:
             # Skip first stationary 30 frames (1 second) and skip every 10
             start_idx = skip
-            offset_idx = 1
+            offset_idx = 2
 
         pool_input = []
         for idx in tqdm(range(start_idx, len(image_paths)-offset_idx-start_idx)):

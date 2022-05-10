@@ -38,8 +38,8 @@ N_FILTERS_ENCODER_DEPTH                     = [16, 32, 64, 128, 128]
 RESOLUTIONS_BACKPROJECTION                  = [0, 1, 2, 3]
 N_FILTERS_DECODER                           = [256, 128, 128, 64, 12]
 DECONV_TYPE                                 = 'up'
-MIN_PREDICT_DEPTH                           = 1.5
-MAX_PREDICT_DEPTH                           = 100.0
+MIN_PREDICT_DEPTH                           = 0.2
+MAX_PREDICT_DEPTH                           = 1000.0
 
 # Weight settings
 WEIGHT_INITIALIZER                          = 'xavier_normal'

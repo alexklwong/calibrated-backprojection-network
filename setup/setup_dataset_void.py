@@ -23,10 +23,10 @@ sys.path.insert(0,'src')
 import data_utils
 from tqdm import tqdm
 
-VOID_ROOT_DIRPATH       = os.path.join('/local1/datasets/Depth_Completion_Datasets/void-dataset/data', 'void_release')
+VOID_ROOT_DIRPATH       = os.path.join('/local1/datasets/Depth_Completion_Datasets/void_set2/void-dataset/data', 'void_release')
 VOID_DATA_1500_DIRPATH  = os.path.join(VOID_ROOT_DIRPATH, 'void_1500')
 
-VOID_OUTPUT_DIRPATH     = os.path.join('/local1/datasets/Depth_Completion_Datasets/void-dataset/data', 'void_kbnet')
+VOID_OUTPUT_DIRPATH     = os.path.join('/local1/datasets/Depth_Completion_Datasets/void_set2/void-dataset/data', 'void_kbnet')
 
 VOID_TRAIN_IMAGE_FILENAME         = 'train_image.txt'
 VOID_TRAIN_POSE_FILENAME          = 'train_absolute_pose.txt'
@@ -358,14 +358,14 @@ for data_dirpath, train_filepaths, test_filepaths, unused_filepaths in tqdm(data
                     ground_truth_outpath = result
 
                 # Split into training, testing and unused testing sets
-                if 'void_1500/'+image_refpath in train_image_paths:
+                if image_refpath in train_image_paths:
                     train_image_outpaths.append(image_outpath)
                     train_pose_outpaths.append(pose_outpath)
                     train_sparse_depth_outpaths.append(sparse_depth_outpath)
                     train_validity_map_outpaths.append(validity_map_outpath)
                     train_ground_truth_outpaths.append(ground_truth_outpath)
                     train_intrinsics_outpaths.append(intrinsics_outpath)
-                elif 'void_1500/'+image_refpath in test_image_paths:
+                elif image_refpath in test_image_paths:
                     test_image_outpaths.append(image_outpath)
                     test_pose_outpaths.append(pose_outpath)
                     test_sparse_depth_outpaths.append(sparse_depth_outpath)

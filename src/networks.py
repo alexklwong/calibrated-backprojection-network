@@ -533,7 +533,7 @@ class KBNetEncoder(torch.nn.Module):
             # Feature extractors
             conv0_image = self.conv0_image(image)
             conv0_depth = self.conv0_depth(depth)
-
+            print(conv0_depth.shape)
             # Calibrated backprojection
             conv1_image, conv1_depth, conv1_fused = self.calibrated_backprojection1(
                 image=conv0_image,

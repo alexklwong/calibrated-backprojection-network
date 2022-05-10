@@ -6,6 +6,7 @@ python src/train_kbnet.py \
 --train_image_path training/void/void_train_image_1500.txt \
 --train_sparse_depth_path training/void/void_train_sparse_depth_1500.txt \
 --train_intrinsics_path training/void/void_train_intrinsics_1500.txt \
+--train_pose_path training/void/void_train_pose_1500.txt \
 --val_image_path testing/void/void_test_image_1500.txt \
 --val_sparse_depth_path testing/void/void_test_sparse_depth_1500.txt \
 --val_intrinsics_path testing/void/void_test_intrinsics_1500.txt \

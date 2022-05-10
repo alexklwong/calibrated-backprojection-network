@@ -300,7 +300,7 @@ class KBNetModel(object):
             'image01' : image01,
             'image02' : image02
         }
-
+        # print(loss_structure, loss_sparse_depth, loss_smoothness, loss)
         return loss, loss_info
 
     def parameters(self):

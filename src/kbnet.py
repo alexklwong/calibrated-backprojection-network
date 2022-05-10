@@ -462,9 +462,8 @@ def train(train_image_path,
                 pose01 = pose_model.forward(image0, image1)
                 pose02 = pose_model.forward(image0, image2)
             else:
-                # Below 3 lines are in case 'absolute pose' is in world frame, and not camera frame. 
-                # Comment them out if poses are in camera frame. 
                 if pose_in_world_frame:
+                    # Below 3 lines are in case 'absolute pose' is in world frame, and not camera frame. 
                     pose0 = torch.inverse(pose0)
                     pose1 = torch.inverse(pose1)
                     pose2 = torch.inverse(pose2)
@@ -584,7 +583,7 @@ def validate(depth_model,
     sparse_depth_summary = []
     validity_map_summary = []
     ground_truth_summary = []
-    # print(dataloader)
+
     for idx, (inputs, ground_truth) in enumerate(zip(dataloader, ground_truths)):
 
         # Move inputs to device
@@ -645,8 +644,6 @@ def validate(depth_model,
             ground_truth > min_evaluate_depth,
             ground_truth < max_evaluate_depth)
         mask = np.where( np.logical_and(validity_mask, min_max_mask) > 0)
-        # print("\n",output_depth,"\n")
-        # print("\n", ground_truth, "\n")
 
         output_depth = output_depth[mask]
         ground_truth = ground_truth[mask]
@@ -720,6 +717,7 @@ def run(image_path,
         sparse_depth_path,
         intrinsics_path,
         ground_truth_path=None,
+        to_scale_depth=True,
         is_orb_data=False,
         # Input settings
         input_channels_image=settings.INPUT_CHANNELS_IMAGE,
@@ -819,7 +817,7 @@ def run(image_path,
 
         ground_truths = []
         for path in ground_truth_paths:
-            ground_truth, validity_map = data_utils.load_depth_with_validity_map(path, file_format=depth_file_format)
+            ground_truth, validity_map = data_utils.load_depth_with_validity_map(path, scale_depth=to_scale_depth, file_format=depth_file_format)
             ground_truths.append(np.stack([ground_truth, validity_map], axis=-1))
     else:
         ground_truths = [None] * n_sample
@@ -829,7 +827,7 @@ def run(image_path,
         datasets.KBNetInferenceDataset(
             image_paths=image_paths,
             sparse_depth_paths=sparse_depth_paths,
-            intrinsics_paths=intrinsics_paths, depth_file_format=depth_file_format, use_image_triplet=False),
+            intrinsics_paths=intrinsics_paths, to_scale=to_scale_depth, depth_file_format=depth_file_format, use_image_triplet=True),
         batch_size=1,
         shuffle=False,
         num_workers=1,
@@ -1007,10 +1005,10 @@ def run(image_path,
 
             output_depth = output_depth[mask]
             ground_truth = ground_truth[mask]
-
-            mae[idx] = eval_utils.mean_abs_err(1000.0 * output_depth, 1000.0 * ground_truth)
-            rmse[idx] = eval_utils.root_mean_sq_err(1000.0 * output_depth, 1000.0 * ground_truth)
-            imae[idx] = eval_utils.inv_mean_abs_err(0.001 * output_depth, 0.001 * ground_truth)
+            # print(np.mean(ground_truth), np.mean(output_depth), np.mean(filtered_sparse_depth.cpu().numpy()))
+            mae[idx]   = eval_utils.mean_abs_err(1000.0 * output_depth, 1000.0 * ground_truth)
+            rmse[idx]  = eval_utils.root_mean_sq_err(1000.0 * output_depth, 1000.0 * ground_truth)
+            imae[idx]  = eval_utils.inv_mean_abs_err(0.001 * output_depth, 0.001 * ground_truth)
             irmse[idx] = eval_utils.inv_root_mean_sq_err(0.001 * output_depth, 0.001 * ground_truth)
 
     # Compute total time elapse in ms
