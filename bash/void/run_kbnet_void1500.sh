@@ -28,8 +28,7 @@ python src/run_kbnet.py \
 --min_evaluate_depth 0.2 \
 --max_evaluate_depth 5.0 \
 --save_outputs \
---depth_model_restore_path \
-/local1/datasets/Depth_Completion_Datasets/void_set2/training_results/training_results_proper_void\&orb/trained_posenet/void1500/kbnet_model/depth_model-68000.pth \
+--depth_model_restore_path traine_with_poses.pth \
 --output_path \
-pretrained/pretrained_models/void/evaluation_results/void1500 \
+evaluation_results/void1500_poses \
 --device gpu

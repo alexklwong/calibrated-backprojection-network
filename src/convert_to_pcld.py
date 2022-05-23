@@ -16,9 +16,8 @@ except:
 # rgbd_image = o3d.geometry.RGBDImage.create_from_color_and_depth(image, depth_image)
 # o3d.visualization.draw_geometries([rgbd_image])
 # exit()
-K = np.loadtxt(intrinsics_file)
+K = np.load(intrinsics_file)
 output_depth_image = data_utils.load_depth(output_depth_file)
-
 image_coordinates = []
 depths = []
 for i in range(output_depth_image.shape[1]):
@@ -34,7 +33,7 @@ threeD_coordinates = threeD_coordinates.T
 
 pcd = o3d.geometry.PointCloud()
 pcd.points = o3d.utility.Vector3dVector(threeD_coordinates)
-# o3d.io.write_point_cloud("pointcloud.pcd", pcd)
-o3d.visualization.draw_geometries([pcd])
-plt.plot(threeD_coordinates[:,-1])
-plt.show()
+o3d.io.write_point_cloud("pointcloud.pcd", pcd)
+# o3d.visualization.draw_geometries([pcd])
+# plt.plot(threeD_coordinates[:,-1])
+# plt.show()

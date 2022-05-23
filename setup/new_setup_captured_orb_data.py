@@ -27,9 +27,10 @@ from natsort import natsorted
 paths_only = False
 skip = 5
 
-def create_imagesPaths_files(DATA_DIRPATH, train_fileNames, test_fileNames):
+def create_imagesPaths_files(DATA_DIRPATH, train_fileNames, test_fileNames, val_fileNames):
     train_image_fileName, train_pose_fileName, train_sparse_depth_fileName, train_validity_map_fileName, train_ground_truth_fileName, train_intrinsics_fileName  = train_fileNames   
     test_image_fileName, test_pose_fileName, test_sparse_depth_fileName, test_validity_map_fileName, test_ground_truth_fileName, test_intrinsics_fileName  = test_fileNames   
+    val_image_fileName, val_sparse_depth_fileName, val_validity_map_fileName, val_ground_truth_fileName, val_intrinsics_fileName  = val_fileNames   
     
     train_image_filepath = os.path.join(DATA_DIRPATH, train_image_fileName)
     train_pose_filepath = os.path.join(DATA_DIRPATH, train_pose_fileName)
@@ -45,6 +46,11 @@ def create_imagesPaths_files(DATA_DIRPATH, train_fileNames, test_fileNames):
     test_ground_truth_filepath = os.path.join(DATA_DIRPATH, test_ground_truth_fileName)
     test_intrinsics_filepath = os.path.join(DATA_DIRPATH, test_intrinsics_fileName)
 
+    val_image_filepath = os.path.join(DATA_DIRPATH, val_image_fileName)
+    val_sparse_depth_filepath = os.path.join(DATA_DIRPATH, val_sparse_depth_fileName)
+    val_validity_map_filepath = os.path.join(DATA_DIRPATH, val_validity_map_fileName)
+    val_ground_truth_filepath = os.path.join(DATA_DIRPATH, val_ground_truth_fileName)
+    val_intrinsics_filepath = os.path.join(DATA_DIRPATH, val_intrinsics_fileName)
 
     train_imageF = open(train_image_filepath, "w")
     train_poseF = open(train_pose_filepath, "w")
@@ -59,6 +65,12 @@ def create_imagesPaths_files(DATA_DIRPATH, train_fileNames, test_fileNames):
     test_valF = open(test_validity_map_filepath, "w")
     test_gtF = open(test_ground_truth_filepath, "w")
     test_KF = open(test_intrinsics_filepath, "w")
+
+    val_imageF = open(val_image_filepath, "w")
+    val_sparseF = open(val_sparse_depth_filepath, "w")
+    val_valF = open(val_validity_map_filepath, "w")
+    val_gtF = open(val_ground_truth_filepath, "w")
+    val_KF = open(val_intrinsics_filepath, "w")
 
     images_folder = os.path.join(DATA_DIRPATH, "images")
     poses_folder = os.path.join(DATA_DIRPATH, "poses")
@@ -81,25 +93,38 @@ def create_imagesPaths_files(DATA_DIRPATH, train_fileNames, test_fileNames):
     test_GTPaths = []
     test_intrinsicPaths = []
 
-    
-    training_indices = np.random.choice(numImages, int(0.9*numImages), replace=False)
+    val_imagePaths = []
+    val_posePaths = []
+    val_sparsePaths = []
+    val_valPaths = []
+    val_GTPaths = []
+    val_intrinsicPaths = []
+
+    val_indices = np.random.choice(numImages, int(0.1*numImages), replace=False)
     for i in range(numImages):
         if i< skip:
             continue
-        if i in training_indices:
-            train_imagePaths.append( os.path.join(images_folder, "keyframe"+str(i)+".png\n")  )
-            train_posePaths.append( os.path.join(poses_folder, "pose"+str(i)+".txt\n")  )
-            train_sparsePaths.append( os.path.join(depths_folder, "depth"+str(i)+".yml\n")  )
-            train_valPaths.append( os.path.join(val_folder, "validity_map"+str(i)+".png\n")  )
-            train_GTPaths.append( os.path.join(gt_folder, "rawDepth"+str(i)+".yml\n")  )
-            train_intrinsicPaths.append( os.path.join(DATA_DIRPATH, "intrinsics.yml\n")  )
-        else:
-            test_imagePaths.append(os.path.join(images_folder, "keyframe"+str(i)+".png\n"))
-            test_posePaths.append( os.path.join(poses_folder, "pose"+str(i)+".txt\n")  )
-            test_sparsePaths.append( os.path.join(depths_folder, "depth"+str(i)+".yml\n")  )
-            test_valPaths.append( os.path.join(val_folder, "validity_map"+str(i)+".png\n")  )
-            test_GTPaths.append( os.path.join(gt_folder, "rawDepth"+str(i)+".yml\n")  )
-            test_intrinsicPaths.append( os.path.join(DATA_DIRPATH, "intrinsics.yml\n")  )
+        # if i in training_indices:
+        train_imagePaths.append( os.path.join(images_folder, "keyframe"+str(i)+".png\n")  )
+        train_posePaths.append( os.path.join(poses_folder, "pose"+str(i)+".txt\n")  )
+        train_sparsePaths.append( os.path.join(depths_folder, "depth"+str(i)+".yml\n")  )
+        train_valPaths.append( os.path.join(val_folder, "validity_map"+str(i)+".png\n")  )
+        train_GTPaths.append( os.path.join(gt_folder, "rawDepth"+str(i)+".yml\n")  )
+        train_intrinsicPaths.append( os.path.join(DATA_DIRPATH, "intrinsics.yml\n")  )
+
+        test_imagePaths.append(os.path.join(images_folder, "keyframe"+str(i)+".png\n"))
+        test_posePaths.append( os.path.join(poses_folder, "pose"+str(i)+".txt\n")  )
+        test_sparsePaths.append( os.path.join(depths_folder, "depth"+str(i)+".yml\n")  )
+        test_valPaths.append( os.path.join(val_folder, "validity_map"+str(i)+".png\n")  )
+        test_GTPaths.append( os.path.join(gt_folder, "rawDepth"+str(i)+".yml\n")  )
+        test_intrinsicPaths.append( os.path.join(DATA_DIRPATH, "intrinsics.yml\n")  )
+
+        if i in val_indices:
+            val_imagePaths.append(os.path.join(images_folder, "keyframe"+str(i)+".png\n"))
+            val_sparsePaths.append( os.path.join(depths_folder, "depth"+str(i)+".yml\n")  )
+            val_valPaths.append( os.path.join(val_folder, "validity_map"+str(i)+".png\n")  )
+            val_GTPaths.append( os.path.join(gt_folder, "rawDepth"+str(i)+".yml\n")  )
+            val_intrinsicPaths.append( os.path.join(DATA_DIRPATH, "intrinsics.yml\n")  )
 
     train_imageF.writelines(train_imagePaths)
     train_poseF.writelines(train_posePaths)
@@ -115,6 +140,12 @@ def create_imagesPaths_files(DATA_DIRPATH, train_fileNames, test_fileNames):
     test_gtF.writelines(test_GTPaths)
     test_KF.writelines(test_intrinsicPaths)
 
+    val_imageF.writelines(val_imagePaths)
+    val_sparseF.writelines(val_sparsePaths)
+    val_valF.writelines(val_valPaths) 
+    val_gtF.writelines(val_GTPaths)
+    val_KF.writelines(val_intrinsicPaths)
+
     train_imageF.close()
     train_poseF.close()
     train_sparseF.close()
@@ -127,6 +158,12 @@ def create_imagesPaths_files(DATA_DIRPATH, train_fileNames, test_fileNames):
     test_valF.close()
     test_gtF.close()
     test_KF.close()
+    val_imageF.close()
+    val_sparseF.close()
+    val_valF.close()
+    val_gtF.close()
+    val_KF.close()
+
 
 DATA_DIRPATH  = sys.argv[1]
 OUTPUT_DIRPATH     = sys.argv[2] 
@@ -143,10 +180,17 @@ TEST_SPARSE_DEPTH_FILENAME   = 'test_sparse_depth.txt'
 TEST_VALIDITY_MAP_FILENAME   = 'test_validity_map.txt'
 TEST_GROUND_TRUTH_FILENAME   = 'test_ground_truth.txt'
 TEST_INTRINSICS_FILENAME     = 'test_intrinsics.txt'
+VAL_IMAGE_FILENAME          = 'val_image.txt'
+VAL_SPARSE_DEPTH_FILENAME   = 'val_sparse_depth.txt'
+VAL_VALIDITY_MAP_FILENAME   = 'val_validity_map.txt'
+VAL_GROUND_TRUTH_FILENAME   = 'val_ground_truth.txt'
+VAL_INTRINSICS_FILENAME     = 'val_intrinsics.txt'
+
 
 
 TRAIN_REFS_DIRPATH      = os.path.join('training', 'orb')
 TEST_REFS_DIRPATH       = os.path.join('testing', 'orb')
+VAL_REFS_DIRPATH       = os.path.join('validation', 'orb')
 
 
 # ORB training set
@@ -163,10 +207,18 @@ TEST_SPARSE_DEPTH_FILEPATH    = os.path.join(TEST_REFS_DIRPATH, 'test_sparse_dep
 TEST_VALIDITY_MAP_FILEPATH    = os.path.join(TEST_REFS_DIRPATH, 'test_validity_map.txt')
 TEST_GROUND_TRUTH_FILEPATH    = os.path.join(TEST_REFS_DIRPATH, 'test_ground_truth.txt')
 TEST_INTRINSICS_FILEPATH      = os.path.join(TEST_REFS_DIRPATH, 'test_intrinsics.txt')
+# ORB validation
+VAL_IMAGE_FILEPATH           = os.path.join(VAL_REFS_DIRPATH, 'val_image.txt')
+VAL_SPARSE_DEPTH_FILEPATH    = os.path.join(VAL_REFS_DIRPATH, 'val_sparse_depth.txt')
+VAL_VALIDITY_MAP_FILEPATH    = os.path.join(VAL_REFS_DIRPATH, 'val_validity_map.txt')
+VAL_GROUND_TRUTH_FILEPATH    = os.path.join(VAL_REFS_DIRPATH, 'val_ground_truth.txt')
+VAL_INTRINSICS_FILEPATH      = os.path.join(VAL_REFS_DIRPATH, 'val_intrinsics.txt')
+
 
 training_names = [TRAIN_IMAGE_FILENAME, TRAIN_POSE_FILENAME, TRAIN_SPARSE_DEPTH_FILENAME, TRAIN_VALIDITY_MAP_FILENAME, TRAIN_GROUND_TRUTH_FILENAME, TRAIN_INTRINSICS_FILENAME]
 testing_names = [TEST_IMAGE_FILENAME, TEST_POSE_FILENAME, TEST_SPARSE_DEPTH_FILENAME, TEST_VALIDITY_MAP_FILENAME, TEST_GROUND_TRUTH_FILENAME, TEST_INTRINSICS_FILENAME]
-create_imagesPaths_files(DATA_DIRPATH,  training_names,testing_names)
+val_names = [VAL_IMAGE_FILENAME,  VAL_SPARSE_DEPTH_FILENAME, VAL_VALIDITY_MAP_FILENAME, VAL_GROUND_TRUTH_FILENAME, VAL_INTRINSICS_FILENAME]
+create_imagesPaths_files(DATA_DIRPATH,  training_names,testing_names, val_names)
 
 def process_frame(inputs):
     '''
@@ -302,14 +354,26 @@ test_output_filepaths = [
     ]
 ]
 
-for dirpath in tqdm([TRAIN_REFS_DIRPATH, TEST_REFS_DIRPATH]):
+val_output_filepaths = [
+    [
+        VAL_IMAGE_FILEPATH,
+        VAL_SPARSE_DEPTH_FILEPATH,
+        VAL_VALIDITY_MAP_FILEPATH,
+        VAL_GROUND_TRUTH_FILEPATH,
+        VAL_INTRINSICS_FILEPATH
+    ]
+]
+
+
+
+for dirpath in tqdm([TRAIN_REFS_DIRPATH, TEST_REFS_DIRPATH, VAL_REFS_DIRPATH]):
     if not os.path.exists(dirpath):
         os.makedirs(dirpath)
 
 data_filepaths = \
-    zip(data_dirpaths, train_output_filepaths, test_output_filepaths)
+    zip(data_dirpaths, train_output_filepaths, test_output_filepaths, val_output_filepaths)
 
-for data_dirpath, train_filepaths, test_filepaths in tqdm(data_filepaths):
+for data_dirpath, train_filepaths, test_filepaths, val_filepaths in tqdm(data_filepaths):
     # Training set
     train_image_filepath = os.path.join(data_dirpath, TRAIN_IMAGE_FILENAME)
     train_pose_filepath  = os.path.join(data_dirpath, TRAIN_POSE_FILENAME)
@@ -364,6 +428,29 @@ for data_dirpath, train_filepaths, test_filepaths in tqdm(data_filepaths):
     test_seq_dirpaths = set(
         [test_image_paths[idx].split(os.sep)[-3] for idx in range(len(test_image_paths))])
 
+    # Validation set
+    val_image_filepath = os.path.join(data_dirpath, VAL_IMAGE_FILENAME)
+    val_sparse_depth_filepath = os.path.join(data_dirpath, VAL_SPARSE_DEPTH_FILENAME)
+    val_validity_map_filepath = os.path.join(data_dirpath, VAL_VALIDITY_MAP_FILENAME)
+    val_ground_truth_filepath = os.path.join(data_dirpath, VAL_GROUND_TRUTH_FILENAME)
+    val_intrinsics_filepath = os.path.join(data_dirpath, VAL_INTRINSICS_FILENAME)
+
+    # Read testing paths
+    val_image_paths = data_utils.read_paths(val_image_filepath)
+    val_sparse_depth_paths = data_utils.read_paths(val_sparse_depth_filepath)
+    val_validity_map_paths = data_utils.read_paths(val_validity_map_filepath)
+    val_ground_truth_paths = data_utils.read_paths(val_ground_truth_filepath)
+    val_intrinsics_paths = data_utils.read_paths(val_intrinsics_filepath)
+
+    assert len(val_image_paths) == len(val_sparse_depth_paths)
+    assert len(val_image_paths) == len(val_validity_map_paths)
+    assert len(val_image_paths) == len(val_ground_truth_paths)
+    assert len(val_image_paths) == len(val_intrinsics_paths)
+
+    # Get val set directories
+    val_seq_dirpaths = set(
+        [val_image_paths[idx].split(os.sep)[-3] for idx in range(len(val_image_paths))])
+
     # Initialize placeholders for training output paths
     train_image_outpaths = []
     train_pose_outpaths = []
@@ -379,6 +466,14 @@ for data_dirpath, train_filepaths, test_filepaths in tqdm(data_filepaths):
     test_validity_map_outpaths = []
     test_ground_truth_outpaths = []
     test_intrinsics_outpaths = []
+
+    # Initialize placeholders for val output paths
+    val_image_outpaths = []
+    val_sparse_depth_outpaths = []
+    val_validity_map_outpaths = []
+    val_ground_truth_outpaths = []
+    val_intrinsics_outpaths = []
+
 
     # For each dataset density, grab the sequences
     seq_dirpaths = [DATA_DIRPATH]#glob.glob(os.path.join(data_dirpath, 'data', '*'))
@@ -455,6 +550,8 @@ for data_dirpath, train_filepaths, test_filepaths in tqdm(data_filepaths):
 
         train_image_paths = [path(train_image_path).name for train_image_path in train_image_paths]
         test_image_paths = [path(test_image_path).name for test_image_path in test_image_paths]
+        val_image_paths = [path(val_image_path).name for val_image_path in val_image_paths]
+        
         with mp.Pool() as pool:
             pool_results = pool.map(process_frame, pool_input)
 
@@ -474,14 +571,20 @@ for data_dirpath, train_filepaths, test_filepaths in tqdm(data_filepaths):
                     train_validity_map_outpaths.append(str(validity_map_outpath))
                     train_ground_truth_outpaths.append(str(ground_truth_outpath))
                     train_intrinsics_outpaths.append(str(intrinsics_outpath))
-                elif image_refpath in test_image_paths:
+                if image_refpath in test_image_paths:
                     test_image_outpaths.append(str(image_outpath))
                     test_pose_outpaths.append(str(pose_outpath))
                     test_sparse_depth_outpaths.append(str(sparse_depth_outpath))
                     test_validity_map_outpaths.append(str(validity_map_outpath))
                     test_ground_truth_outpaths.append(str(ground_truth_outpath))
                     test_intrinsics_outpaths.append(str(intrinsics_outpath))
-
+                if image_refpath in val_image_paths:
+                    val_image_outpaths.append(str(image_outpath))
+                    val_sparse_depth_outpaths.append(str(sparse_depth_outpath))
+                    val_validity_map_outpaths.append(str(validity_map_outpath))
+                    val_ground_truth_outpaths.append(str(ground_truth_outpath))
+                    val_intrinsics_outpaths.append(str(intrinsics_outpath))
+                
         n_sample = n_sample + len(pool_input)
 
         print('Completed processing {} examples for sequence={}'.format(
@@ -561,3 +664,35 @@ for data_dirpath, train_filepaths, test_filepaths in tqdm(data_filepaths):
         len(test_intrinsics_outpaths), orb_test_intrinsics_filepath))
     data_utils.write_paths(
         orb_test_intrinsics_filepath, test_intrinsics_outpaths)
+
+
+    orb_val_image_filepath, \
+        orb_val_sparse_depth_filepath, \
+        orb_val_validity_map_filepath, \
+        orb_val_ground_truth_filepath, \
+        orb_val_intrinsics_filepath = val_filepaths
+
+    print('Storing {} validation image file paths into: {}'.format(
+        len(val_image_outpaths), orb_val_image_filepath))
+    data_utils.write_paths(
+        orb_val_image_filepath, val_image_outpaths)
+
+    print('Storing {} validation sparse depth file paths into: {}'.format(
+        len(val_sparse_depth_outpaths), orb_val_sparse_depth_filepath))
+    data_utils.write_paths(
+        orb_val_sparse_depth_filepath, val_sparse_depth_outpaths)
+
+    print('Storing {} validation validity map file paths into: {}'.format(
+        len(val_validity_map_outpaths), orb_val_validity_map_filepath))
+    data_utils.write_paths(
+        orb_val_validity_map_filepath, val_validity_map_outpaths)
+
+    print('Storing {} validation groundtruth depth file paths into: {}'.format(
+        len(val_ground_truth_outpaths), orb_val_ground_truth_filepath))
+    data_utils.write_paths(
+        orb_val_ground_truth_filepath, val_ground_truth_outpaths)
+
+    print('Storing {} validation camera intrinsics file paths into: {}'.format(
+        len(val_intrinsics_outpaths), orb_val_intrinsics_filepath))
+    data_utils.write_paths(
+        orb_val_intrinsics_filepath, val_intrinsics_outpaths)

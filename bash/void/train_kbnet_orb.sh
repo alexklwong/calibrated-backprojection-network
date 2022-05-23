@@ -5,11 +5,12 @@ export CUDA_VISIBLE_DEVICES=0
 python src/train_kbnet.py \
 --train_image_path training/orb/train_image.txt \
 --train_sparse_depth_path training/orb/train_sparse_depth.txt \
+--train_pose_path training/orb/train_pose.txt \
 --train_intrinsics_path training/orb/train_intrinsics.txt \
---val_image_path testing/orb/test_image.txt \
---val_sparse_depth_path testing/orb/test_sparse_depth.txt \
---val_intrinsics_path testing/orb/test_intrinsics.txt \
---val_ground_truth_path testing/orb/test_ground_truth.txt \
+--val_image_path validation/orb/val_image.txt \
+--val_sparse_depth_path validation/orb/val_sparse_depth.txt \
+--val_intrinsics_path validation/orb/val_intrinsics.txt \
+--val_ground_truth_path validation/orb/val_ground_truth.txt \
 --is_orb_data 1 \
 --pose_in_world_frame 0 \
 --to_scale_depth 0 \
@@ -21,8 +22,8 @@ python src/train_kbnet.py \
 --normalized_image_range 0 1 \
 --outlier_removal_kernel_size 7 \
 --outlier_removal_threshold 1.5 \
---min_pool_sizes_sparse_to_dense_pool 15 17 19 \
---max_pool_sizes_sparse_to_dense_pool 23 27 \
+--min_pool_sizes_sparse_to_dense_pool 25 27 29 \
+--max_pool_sizes_sparse_to_dense_pool 33 37 \
 --n_convolution_sparse_to_dense_pool 3  \
 --n_filter_sparse_to_dense_pool 8 \
 --n_filters_encoder_image 48 96 192 384 384 \
@@ -34,9 +35,9 @@ python src/train_kbnet.py \
 --max_predict_depth 8.0 \
 --weight_initializer xavier_normal \
 --activation_func leaky_relu \
---learning_rates 1e-2 5e-2  \
---learning_schedule 50 500 \
---augmentation_probabilities 0.00 \
+--learning_rates 1e-4 5e-5  \
+--learning_schedule 20 150 \
+--augmentation_probabilities 1.00 \
 --augmentation_schedule -1 \
 --augmentation_random_crop_type horizontal vertical anchored \
 --augmentation_random_remove_points 0.30 0.60 \

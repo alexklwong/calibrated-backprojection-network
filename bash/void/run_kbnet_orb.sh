@@ -27,11 +27,10 @@ python src/run_kbnet.py \
 --activation_func leaky_relu \
 --min_predict_depth 0.01 \
 --max_predict_depth 8.0 \
---min_evaluate_depth 0.2 \
---max_evaluate_depth 5.0 \
+--min_evaluate_depth 0.02 \
+--max_evaluate_depth 10.0 \
 --save_outputs \
---depth_model_restore_path \
-trained_kbnet_orb_250E/orb/kbnet_model/depth_model-13000.pth \
+--depth_model_restore_path orb_model.pth \
 --output_path \
-pretrained/pretrained_models/orb/evaluation_results/orb \
+evaluation_results/orb/670/orb_trSmteB/ \
 --device gpu

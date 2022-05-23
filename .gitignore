@@ -16,4 +16,5 @@ setup/__pycache__
 trained_kbnet_orb_poses/
 trained_kbnet_orb_posenet_structureloss/
 training_results_orb/
+evaluation_results/
 
