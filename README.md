@@ -6,7 +6,7 @@ Published in ICCV 2021 (ORAL)
 
 [[publication]](https://openaccess.thecvf.com/content/ICCV2021/papers/Wong_Unsupervised_Depth_Completion_With_Calibrated_Backprojection_Layers_ICCV_2021_paper.pdf) [[arxiv]](https://arxiv.org/pdf/2108.10531.pdf) [[poster]](figures/poster.pdf) [[talk]]()
 
-Model have been tested on Ubuntu 16.04, 20.04 using Python 3.5, 3.6, 3.7 PyTorch 1.2, 1.3
+Model have been tested on Ubuntu 16.04, 20.04 using Python 3.5, 3.6, 3.7 PyTorch 1.2, 1.3, (CUDA 10.1), 1.8.0, 1.8.1 (CUDA 11.1)
 
 Authors: [Alex Wong](http://web.cs.ucla.edu/~alexw/)
 
@@ -88,13 +88,27 @@ To demonstrate the effectiveness of our method, we trained a model on the [VOID]
 </p>
 
 ## Setting up your virtual environment <a name="setting-up"></a>
-We will create a virtual environment with the necessary dependencies
+We will create a virtual environment with the necessary dependencies.
+
+For Nvidia GTX 10 series (CUDA 10.1)
 ```
 virtualenv -p /usr/bin/python3.7 kbnet-py37env
 source kbnet-py37env/bin/activate
 pip install opencv-python scipy scikit-learn scikit-image matplotlib gdown numpy gast Pillow pyyaml
 pip install torch==1.3.0 torchvision==0.4.1 tensorboard==2.3.0
 ```
+
+For Nvidia RTX 30 series (CUDA 11.1)
+```
+virtualenv -p /usr/bin/python3.7 kbnet-py37env
+source kbnet-py37env/bin/activate
+pip install opencv-python scipy scikit-learn scikit-image matplotlib gdown numpy gast Pillow pyyaml
+pip install torch==1.8.2+cu111 torchvision==0.9.2+cu111 -f https://download.pytorch.org/whl/lts/1.8/torch_lts.html
+pip install tensorboard==2.3.0
+```
+
+Note that there are some incompatibilities where PyTorch 1.5.0 - 1.7.1 does not reproduce the training results.
+This seems to be fixed in PyTorch 1.8.0, so we recommend for the above virtual environment configurations.
 
 ## Setting up your datasets
 For datasets, we will use [KITTI][kitti_dataset] for outdoors and [VOID][void_github] for indoors. We will also use [NYUv2][nyu_v2_dataset] to demonstrate our generalization capabilities.
@@ -106,17 +120,31 @@ ln -s /path/to/void_release data/
 ln -s /path/to/nyu_v2 data/
 ```
 
-In case you do not already have KITTI and VOID datasets downloaded, we provide download scripts for them:
+In case you do not already have KITTI, NYUv2 and VOID datasets downloaded, we provide download scripts for them:
 ```
 bash bash/setup_dataset_kitti.sh
+bash bash/setup_dataset_nyu_v2.sh
+bash bash/setup_dataset_nyu_v2_raw.sh
 bash bash/setup_dataset_void.sh
 ```
 
-The `bash/setup_dataset_void.sh` script downloads the VOID dataset using gdown. However, gdown intermittently fails. As a workaround, you may download them via:
+For the KITTI dataset, the `bash/setup_dataset_nyu_v2.sh` script will download and set up `kitti_raw_data` and `kitti_depth_completion` for you in your data folder.
+
+For the NYUv2 dataset, the `bash/setup_dataset_nyu_v2.sh` script downloads the NYUv2 dataset using gdown.
+As a workaround, you may download it via:
 ```
-https://drive.google.com/open?id=1GGov8MaBKCEcJEXxY8qrh8Ldt2mErtWs
-https://drive.google.com/open?id=1c3PxnOE0N8tgkvTgPbnUZXS6ekv7pd80
-https://drive.google.com/open?id=14PdJggr2PVJ6uArm9IWlhSHO2y3Q658v
+https://drive.google.com/open?id=1E5NgaEE8zEr4OizVcxc3nfQGfjSatUjX
+```
+
+The zip file is already preprocessed with image and depth frames aligned and synchronized. Alternatively you may want to download the raw data using `bash/setup_dataset_nyu_v2.sh`, but will need to process the frames using their MATLAB toolbox. We recommend the former.
+
+The `bash/setup_dataset_nyu_v2.sh` script will download the `nyu_v2.zip` file and unzip it to the data directory.
+
+For the VOID dataset, the `bash/setup_dataset_void.sh` script downloads the VOID dataset using gdown. However, similar to the above, gdown intermittently fails. As a workaround, you may download them via:
+```
+https://drive.google.com/open?id=1kZ6ALxCzhQP8Tq1enMyNhjclVNzG8ODA
+https://drive.google.com/open?id=1ys5EwYK6i8yvLcln6Av6GwxOhMGb068m
+https://drive.google.com/open?id=1bTM5eh9wQ4U8p2ANOGbhZqTvDOddFnlI
 ```
 which will give you three files `void_150.zip`, `void_500.zip`, `void_1500.zip`.
 
@@ -128,6 +156,11 @@ unzip -o void_500.zip -d void_release/
 unzip -o void_1500.zip -d void_release/
 bash bash/setup_dataset_void.sh unpack-only
 ```
+If you encounter `error: invalid zip file with overlapped components (possible zip bomb)`. Please do the following
+```
+export UNZIP_DISABLE_ZIPBOMB_DETECTION=TRUE
+```
+and run the above again.
 
 For more detailed instructions on downloading and using VOID and obtaining the raw rosbags, you may visit the [VOID][void_github] dataset webpage.
 
