@@ -36,8 +36,8 @@ python src/train_kbnet.py \
 --weight_initializer xavier_normal \
 --activation_func leaky_relu \
 --learning_rates 1e-4 5e-5  \
---learning_schedule 20 150 \
---augmentation_probabilities 1.00 \
+--learning_schedule 100 150 \
+--augmentation_probabilities 0.00 \
 --augmentation_schedule -1 \
 --augmentation_random_crop_type horizontal vertical anchored \
 --augmentation_random_remove_points 0.30 0.60 \
