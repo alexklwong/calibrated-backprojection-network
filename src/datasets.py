@@ -81,13 +81,13 @@ def load_image_triplet(path, normalize=True):
         path,
         normalize=normalize,
         data_format='CHW')
-    c, h, w = images.shape
+
     # Split along width
     image1, image0, image2 = np.split(images, indices_or_sections=3, axis=-1)
 
     return image1, image0, image2
 
-def load_depth(depth_path, to_scale=True, file_format='png'):
+def load_depth(depth_path):
     '''
     Load depth
 
@@ -98,7 +98,7 @@ def load_depth(depth_path, to_scale=True, file_format='png'):
         numpy[float32] : depth map (1 x H x W)
     '''
 
-    return data_utils.load_depth(depth_path, data_format='CHW', scale_depth=to_scale, file_format=file_format)
+    return data_utils.load_depth(depth_path, data_format='CHW')
 
 def load_validity_map(validity_map_path):
     '''
@@ -224,18 +224,16 @@ class KBNetTrainingDataset(torch.utils.data.Dataset):
                  image_paths,
                  sparse_depth_paths,
                  intrinsics_paths,
-                 pose_paths=None,
-                 to_scale=True,
-                 depth_file_format='png',
+		         pose_paths=None, 
                  shape=None,
                  random_crop_type=['none']):
+
         self.image_paths = image_paths
         self.pose_paths = pose_paths
         self.sparse_depth_paths = sparse_depth_paths
         self.intrinsics_paths = intrinsics_paths
-        self.to_scale = to_scale
+
         self.shape = shape
-        self.depth_file_format = depth_file_format
         self.do_random_crop = \
             self.shape is not None and all([x > 0 for x in self.shape])
 
@@ -249,7 +247,7 @@ class KBNetTrainingDataset(torch.utils.data.Dataset):
             normalize=False)
 
         # Load depth
-        sparse_depth0 = load_depth(self.sparse_depth_paths[index], to_scale=self.to_scale, file_format=self.depth_file_format)
+        sparse_depth0 = load_depth(self.sparse_depth_paths[index])
 
         # Load camera intrinsics
         intrinsics = np.load(self.intrinsics_paths[index]).astype(np.float32)
@@ -267,12 +265,13 @@ class KBNetTrainingDataset(torch.utils.data.Dataset):
             T.astype(np.float32)
             for T in [image0, image1, image2, sparse_depth0, intrinsics]
         ]
+
         if self.pose_paths is None:
             return image0, image1, image2, sparse_depth0, intrinsics
         else:
             pose1, pose0, pose2 = load_pose_triplet(self.pose_paths[index])
             return image0, image1, image2, pose0, pose1, pose2, sparse_depth0, intrinsics
-
+    
     def __len__(self):
         return len(self.image_paths)
 
@@ -297,15 +296,12 @@ class KBNetInferenceDataset(torch.utils.data.Dataset):
                  image_paths,
                  sparse_depth_paths,
                  intrinsics_paths,
-                 to_scale=True,
-                 depth_file_format='png',
                  use_image_triplet=True):
 
         self.image_paths = image_paths
         self.sparse_depth_paths = sparse_depth_paths
         self.intrinsics_paths = intrinsics_paths
-        self.to_scale = to_scale
-        self.depth_file_format = depth_file_format
+
         self.use_image_triplet = use_image_triplet
 
     def __getitem__(self, index):
@@ -321,13 +317,10 @@ class KBNetInferenceDataset(torch.utils.data.Dataset):
                 data_format='CHW')
 
         # Load depth
-        sparse_depth = load_depth(self.sparse_depth_paths[index], to_scale=self.to_scale, file_format=self.depth_file_format)
+        sparse_depth = load_depth(self.sparse_depth_paths[index])
 
         # Load camera intrinsics
-        try:
-            intrinsics = np.loadtxt(self.intrinsics_paths[index]).astype(np.float32)
-        except:
-            intrinsics = np.load(self.intrinsics_paths[index]).astype(np.float32)
+        intrinsics = np.load(self.intrinsics_paths[index]).astype(np.float32)
 
         # Convert to float32
         image, sparse_depth, intrinsics = [

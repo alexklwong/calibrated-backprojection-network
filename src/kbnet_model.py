@@ -16,7 +16,7 @@ https://arxiv.org/pdf/2108.10531.pdf
 '''
 import torch, torchvision
 import log_utils, losses, networks, net_utils
-import numpy as np 
+
 
 EPSILON = 1e-8
 
@@ -161,7 +161,6 @@ class KBNetModel(object):
             torch.Tensor[float32] : N x 1 x H x W output dense depth
         '''
 
-        # print( sparse_depth[0] , validity_map_depth[0], '\n', intrinsics[0],'\n')  
         # Depth inputs to network:
         # (1) raw sparse depth, (2) filtered validity map
         input_depth = [
@@ -183,7 +182,7 @@ class KBNetModel(object):
 
         output_depth = \
             self.min_predict_depth / (output_depth + self.min_predict_depth / self.max_predict_depth)
-        # print(output_depth[0])
+
         return output_depth
 
     def compute_loss(self,
@@ -301,7 +300,7 @@ class KBNetModel(object):
             'image01' : image01,
             'image02' : image02
         }
-        # print(loss_structure, loss_sparse_depth, loss_smoothness, loss)
+
         return loss, loss_info
 
     def parameters(self):
@@ -548,8 +547,8 @@ class KBNetModel(object):
                         dim=3))
 
                 # Log distribution of output depth
-                # print("OUTOPUT", output_depth0.shape)
                 summary_writer.add_histogram(tag + '_output_depth0_distro', output_depth0, global_step=step)
+
             if output_depth0 is not None and sparse_depth0 is not None and validity_map0 is not None:
                 sparse_depth0_summary = sparse_depth0[0:n_display]
                 validity_map0_summary = validity_map0[0:n_display]
@@ -580,7 +579,6 @@ class KBNetModel(object):
                         dim=3))
 
                 # Log distribution of sparse depth
-                # print("SPARSE: ",sparse_depth0.shape)
                 summary_writer.add_histogram(tag + '_sparse_depth0_distro', sparse_depth0, global_step=step)
 
             if output_depth0 is not None and ground_truth0 is not None:
@@ -616,7 +614,6 @@ class KBNetModel(object):
                         dim=3))
 
                 # Log distribution of ground truth
-                # print("GT: ",ground_truth0.shape)
                 summary_writer.add_histogram(tag + '_ground_truth0_distro', ground_truth0, global_step=step)
 
             if pose01 is not None:

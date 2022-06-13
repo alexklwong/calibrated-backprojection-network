@@ -21,8 +21,6 @@ from kbnet import run
 
 parser = argparse.ArgumentParser()
 
-parser.add_argument('--is_orb_data',
-    type=str, default='0', help='Set to 1 if data is from orb slam. Default 0 implies void(or some other) dataset')
 parser.add_argument('--image_path',
     type=str, required=True, help='Path to list of image paths')
 parser.add_argument('--sparse_depth_path',
@@ -31,8 +29,6 @@ parser.add_argument('--intrinsics_path',
     type=str, required=True, help='Path to list of camera intrinsics paths')
 parser.add_argument('--ground_truth_path',
     type=str, default='', help='Path to list of ground truth depth paths')
-parser.add_argument('--to_scale_depth',
-    type=str, default='1', help='Set to 0 if depth SHOULDNT be scaled. Default 1 implies depth should be divided by 256 when loading (Default for KBnet with void).')
 # Input settings
 parser.add_argument('--input_channels_image',
     type=int, default=3, help='Number of input image channels')
@@ -118,8 +114,6 @@ if __name__ == '__main__':
         args.sparse_depth_path,
         args.intrinsics_path,
         ground_truth_path=args.ground_truth_path,
-        is_orb_data = bool(int(args.is_orb_data)),
-        to_scale_depth = bool(int(args.to_scale_depth)),
         # Input settings
         input_channels_image=args.input_channels_image,
         input_channels_depth=args.input_channels_depth,

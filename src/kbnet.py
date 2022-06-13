@@ -26,7 +26,7 @@ from posenet_model import PoseNetModel
 import global_constants as settings
 from transforms import Transforms
 from net_utils import OutlierRemoval
-from pathlib import Path as pathlib_path
+
 
 def train(train_image_path,
           train_pose_path,
@@ -36,9 +36,7 @@ def train(train_image_path,
           val_sparse_depth_path,
           val_intrinsics_path,
           val_ground_truth_path,
-          is_orb_data=False,
-          pose_in_world_frame = False,
-          to_scale_depth = True,
+          pose_in_world_frame = False, 
           # Batch settings
           n_batch=settings.N_BATCH,
           n_height=settings.N_HEIGHT,
@@ -105,10 +103,6 @@ def train(train_image_path,
     if not os.path.exists(checkpoint_path):
         os.makedirs(checkpoint_path)
 
-    if is_orb_data:
-        depth_file_format = 'yml'
-    else:
-        depth_file_format = 'png'
     # Set up checkpoint and event paths
     depth_model_checkpoint_path = os.path.join(checkpoint_path, 'depth_model-{}.pth')
     pose_model_checkpoint_path = os.path.join(checkpoint_path, 'pose_model-{}.pth')
@@ -148,9 +142,7 @@ def train(train_image_path,
             image_paths=train_image_paths,
             sparse_depth_paths=train_sparse_depth_paths,
             intrinsics_paths=train_intrinsics_paths,
-            pose_paths=train_pose_paths,
-            to_scale=to_scale_depth,
-            depth_file_format=depth_file_format,
+            pose_paths=train_pose_paths, 
             shape=(n_height, n_width),
             random_crop_type=augmentation_random_crop_type),
         batch_size=n_batch,
@@ -185,16 +177,14 @@ def train(train_image_path,
 
         ground_truths = []
         for path in val_ground_truth_paths:
-            ground_truth, validity_map = data_utils.load_depth_with_validity_map(path, scale_depth=to_scale_depth, file_format=depth_file_format)
+            ground_truth, validity_map = data_utils.load_depth_with_validity_map(path)
             ground_truths.append(np.stack([ground_truth, validity_map], axis=-1))
 
         val_dataloader = torch.utils.data.DataLoader(
             datasets.KBNetInferenceDataset(
                 image_paths=val_image_paths,
                 sparse_depth_paths=val_sparse_depth_paths,
-                intrinsics_paths=val_intrinsics_paths,
-                to_scale = to_scale_depth,
-                depth_file_format=depth_file_format),
+                intrinsics_paths=val_intrinsics_paths),
             batch_size=1,
             shuffle=False,
             num_workers=1,
@@ -643,7 +633,7 @@ def validate(depth_model,
         min_max_mask = np.logical_and(
             ground_truth > min_evaluate_depth,
             ground_truth < max_evaluate_depth)
-        mask = np.where( np.logical_and(validity_mask, min_max_mask) > 0)
+        mask = np.where(np.logical_and(validity_mask, min_max_mask) > 0)
 
         output_depth = output_depth[mask]
         ground_truth = ground_truth[mask]
@@ -717,8 +707,6 @@ def run(image_path,
         sparse_depth_path,
         intrinsics_path,
         ground_truth_path=None,
-        to_scale_depth=True,
-        is_orb_data=False,
         # Input settings
         input_channels_image=settings.INPUT_CHANNELS_IMAGE,
         input_channels_depth=settings.INPUT_CHANNELS_DEPTH,
@@ -753,10 +741,6 @@ def run(image_path,
         # Hardware settings
         device=settings.DEVICE):
 
-    if is_orb_data:
-        depth_file_format = 'yml'
-    else:
-        depth_file_format = 'png'
     # Set up output path
     if device == settings.CUDA or device == settings.GPU:
         device = torch.device(settings.CUDA)
@@ -773,31 +757,15 @@ def run(image_path,
     '''
     Load input paths and set up dataloader
     '''
-    img_path = pathlib_path(image_path)
-    image_paths = None
-    sparse_depth_paths = None
-    intrinsics_paths = None
-    
-    if img_path.suffix.lower() == '.png' or img_path.suffix.lower() == '.jpg':
-        image_paths =  [image_path]
-        sparse_depth_paths = [sparse_depth_path]
-        intrinsics_paths = [intrinsics_path]
-        print(" \n\n Inference on Single image \n\n")
-    else:
-        image_paths = data_utils.read_paths(image_path)
-        sparse_depth_paths = data_utils.read_paths(sparse_depth_path)
-        intrinsics_paths = data_utils.read_paths(intrinsics_path)
-        
+    image_paths = data_utils.read_paths(image_path)
+    sparse_depth_paths = data_utils.read_paths(sparse_depth_path)
+    intrinsics_paths = data_utils.read_paths(intrinsics_path)
+
     ground_truth_available = False
 
     if ground_truth_path != '':
-        ground_truth_paths = None
         ground_truth_available = True
-        gtpath = pathlib_path(ground_truth_path)
-        if gtpath.suffix.lower() == '.png' or gtpath.suffix.lower() == '.jpg':
-            ground_truth_paths = [ground_truth_path]
-        else:
-            ground_truth_paths = data_utils.read_paths(ground_truth_path)
+        ground_truth_paths = data_utils.read_paths(ground_truth_path)
 
     n_sample = len(image_paths)
 
@@ -817,7 +785,7 @@ def run(image_path,
 
         ground_truths = []
         for path in ground_truth_paths:
-            ground_truth, validity_map = data_utils.load_depth_with_validity_map(path, scale_depth=to_scale_depth, file_format=depth_file_format)
+            ground_truth, validity_map = data_utils.load_depth_with_validity_map(path)
             ground_truths.append(np.stack([ground_truth, validity_map], axis=-1))
     else:
         ground_truths = [None] * n_sample
@@ -827,7 +795,7 @@ def run(image_path,
         datasets.KBNetInferenceDataset(
             image_paths=image_paths,
             sparse_depth_paths=sparse_depth_paths,
-            intrinsics_paths=intrinsics_paths, to_scale=to_scale_depth, depth_file_format=depth_file_format, use_image_triplet=True),
+            intrinsics_paths=intrinsics_paths),
         batch_size=1,
         shuffle=False,
         num_workers=1,
@@ -1005,10 +973,10 @@ def run(image_path,
 
             output_depth = output_depth[mask]
             ground_truth = ground_truth[mask]
-            # print(np.mean(ground_truth), np.mean(output_depth), np.mean(filtered_sparse_depth.cpu().numpy()))
-            mae[idx]   = eval_utils.mean_abs_err(1000.0 * output_depth, 1000.0 * ground_truth)
-            rmse[idx]  = eval_utils.root_mean_sq_err(1000.0 * output_depth, 1000.0 * ground_truth)
-            imae[idx]  = eval_utils.inv_mean_abs_err(0.001 * output_depth, 0.001 * ground_truth)
+
+            mae[idx] = eval_utils.mean_abs_err(1000.0 * output_depth, 1000.0 * ground_truth)
+            rmse[idx] = eval_utils.root_mean_sq_err(1000.0 * output_depth, 1000.0 * ground_truth)
+            imae[idx] = eval_utils.inv_mean_abs_err(0.001 * output_depth, 0.001 * ground_truth)
             irmse[idx] = eval_utils.inv_root_mean_sq_err(0.001 * output_depth, 0.001 * ground_truth)
 
     # Compute total time elapse in ms

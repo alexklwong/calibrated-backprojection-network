@@ -23,8 +23,6 @@ from kbnet import train
 parser = argparse.ArgumentParser()
 
 # Training and validation input filepaths
-parser.add_argument('--is_orb_data',
-    type=str, default='0', help='Set to 1 if data is from orb slam. Default 0 implies void(or some other) dataset')
 parser.add_argument('--train_image_path',
     type=str, required=True, help='Path to list of training image paths')
 parser.add_argument('--train_pose_path',
@@ -43,8 +41,6 @@ parser.add_argument('--val_ground_truth_path',
     type=str, default='', help='Path to list of validation ground truth depth paths')
 parser.add_argument('--pose_in_world_frame',
     type=str, default='0', help='Set to 1 if pose is in world frame. Default 0 implies poses are in camera(s) frame(s)')
-parser.add_argument('--to_scale_depth',
-    type=str, default='1', help='Set to 0 if depth SHOULDNT be scaled. Default 1 implies depth should be divided by 256 when loading (Default for KBnet with void).')
 # Batch parameters
 parser.add_argument('--n_batch',
     type=int, default=settings.N_BATCH, help='Number of samples per batch')
@@ -188,8 +184,7 @@ if __name__ == '__main__':
         args.device = settings.CUDA if torch.cuda.is_available() else settings.CPU
 
     args.device = settings.CUDA if args.device == settings.GPU else args.device
-    train(is_orb_data = bool(int(args.is_orb_data)), 
-          train_image_path=args.train_image_path,
+    train(train_image_path=args.train_image_path,
           train_pose_path=args.train_pose_path,
           train_sparse_depth_path=args.train_sparse_depth_path,
           train_intrinsics_path=args.train_intrinsics_path,
@@ -198,7 +193,6 @@ if __name__ == '__main__':
           val_intrinsics_path=args.val_intrinsics_path,
           val_ground_truth_path=args.val_ground_truth_path,
           pose_in_world_frame=bool(int(args.pose_in_world_frame)),
-          to_scale_depth=bool(int(args.to_scale_depth)),
           # Batch settings
           n_batch=args.n_batch,
           n_height=args.n_height,
