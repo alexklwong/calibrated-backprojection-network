@@ -13,3 +13,4 @@ test_data
 pretrained
 trained_kbnet/
 setup/__pycache__
+evaluation_results/
