@@ -28,8 +28,7 @@ python src/run_kbnet.py \
 --min_evaluate_depth 0.2 \
 --max_evaluate_depth 5.0 \
 --save_outputs \
---depth_model_restore_path \
-pretrained_models/void/kbnet-void1500.pth \
+--depth_model_restore_path traine_with_poses.pth \
 --output_path \
-pretrained_models/void/evaluation_results/void1500 \
+evaluation_results/void1500_poses \
 --device gpu

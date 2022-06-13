@@ -25,6 +25,8 @@ parser = argparse.ArgumentParser()
 # Training and validation input filepaths
 parser.add_argument('--train_image_path',
     type=str, required=True, help='Path to list of training image paths')
+parser.add_argument('--train_pose_path',
+    type=str, required=False, help='Path to list of training pose paths', default=" ")
 parser.add_argument('--train_sparse_depth_path',
     type=str, required=True, help='Path to list of training sparse depth paths')
 parser.add_argument('--train_intrinsics_path',
@@ -37,6 +39,8 @@ parser.add_argument('--val_intrinsics_path',
     type=str, default='', help='Path to list of validation camera intrinsics paths')
 parser.add_argument('--val_ground_truth_path',
     type=str, default='', help='Path to list of validation ground truth depth paths')
+parser.add_argument('--pose_in_world_frame',
+    type=str, default='0', help='Set to 1 if pose is in world frame. Default 0 implies poses are in camera(s) frame(s)')
 # Batch parameters
 parser.add_argument('--n_batch',
     type=int, default=settings.N_BATCH, help='Number of samples per batch')
@@ -180,14 +184,15 @@ if __name__ == '__main__':
         args.device = settings.CUDA if torch.cuda.is_available() else settings.CPU
 
     args.device = settings.CUDA if args.device == settings.GPU else args.device
-
     train(train_image_path=args.train_image_path,
+          train_pose_path=args.train_pose_path,
           train_sparse_depth_path=args.train_sparse_depth_path,
           train_intrinsics_path=args.train_intrinsics_path,
           val_image_path=args.val_image_path,
           val_sparse_depth_path=args.val_sparse_depth_path,
           val_intrinsics_path=args.val_intrinsics_path,
           val_ground_truth_path=args.val_ground_truth_path,
+          pose_in_world_frame=bool(int(args.pose_in_world_frame)),
           # Batch settings
           n_batch=args.n_batch,
           n_height=args.n_height,
