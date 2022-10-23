@@ -6,10 +6,12 @@ python src/train_kbnet.py \
 --train_image_path training/void/void_train_image_1500.txt \
 --train_sparse_depth_path training/void/void_train_sparse_depth_1500.txt \
 --train_intrinsics_path training/void/void_train_intrinsics_1500.txt \
+--train_pose_path training/void/void_train_pose_1500.txt \
 --val_image_path testing/void/void_test_image_1500.txt \
 --val_sparse_depth_path testing/void/void_test_sparse_depth_1500.txt \
 --val_intrinsics_path testing/void/void_test_intrinsics_1500.txt \
 --val_ground_truth_path testing/void/void_test_ground_truth_1500.txt \
+--pose_in_world_frame 0 \
 --n_batch 8 \
 --n_height 480 \
 --n_width 640 \
@@ -52,4 +54,4 @@ python src/train_kbnet.py \
 --validation_start 5000 \
 --checkpoint_path trained_kbnet/void1500/kbnet_model \
 --device gpu \
---n_thread 8
+--n_thread 16
