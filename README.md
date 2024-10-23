@@ -128,34 +128,45 @@ bash bash/setup_dataset_nyu_v2_raw.sh
 bash bash/setup_dataset_void.sh
 ```
 
-For the KITTI dataset, the `bash/setup_dataset_nyu_v2.sh` script will download and set up `kitti_raw_data` and `kitti_depth_completion` for you in your data folder.
+For the KITTI dataset, the `bash/setup_dataset_kitti.sh` script will download and set up `kitti_raw_data` and `kitti_depth_completion` for you in your data folder.
 
-For the NYUv2 dataset, the `bash/setup_dataset_nyu_v2.sh` script downloads the NYUv2 dataset using gdown.
-As a workaround, you may download it via:
+**We have migrated the datasets from Google Drive to OneDrive**
+
+For the NYUv2 dataset, you may download and unzip it via:
 ```
-https://drive.google.com/open?id=1E5NgaEE8zEr4OizVcxc3nfQGfjSatUjX
+https://yaleedu-my.sharepoint.com/:u:/g/personal/alex_wong_yale_edu/EfTcbD932KBPk81etE7JGRkBEaPpQRTnn4BricoI2ohHNQ?e=LkgTsw
+```
+
+via the following command
+
+```
+wget -O nyu_v2_subset.zip 'https://yaleedu-my.sharepoint.com/:u:/g/personal/alex_wong_yale_edu/EfTcbD932KBPk81etE7JGRkBEaPpQRTnn4BricoI2ohHNQ?e=LkgTsw&download=1'
+unzip nyu_v2_subset.zip
 ```
 
 The zip file is already preprocessed with image and depth frames aligned and synchronized. Alternatively you may want to download the raw data using `bash/setup_dataset_nyu_v2.sh`, but will need to process the frames using their MATLAB toolbox. We recommend the former.
 
 The `bash/setup_dataset_nyu_v2.sh` script will download the `nyu_v2.zip` file and unzip it to the data directory.
 
-For the VOID dataset, the `bash/setup_dataset_void.sh` script downloads the VOID dataset using gdown. However, similar to the above, gdown intermittently fails. As a workaround, you may download them via:
+To download the release version of the dataset through your browser you may visit:
 ```
-https://drive.google.com/open?id=1kZ6ALxCzhQP8Tq1enMyNhjclVNzG8ODA
-https://drive.google.com/open?id=1ys5EwYK6i8yvLcln6Av6GwxOhMGb068m
-https://drive.google.com/open?id=1bTM5eh9wQ4U8p2ANOGbhZqTvDOddFnlI
+https://yaleedu-my.sharepoint.com/:u:/g/personal/alex_wong_yale_edu/Ebwvk0Ji8HhNinmAcKI5vSkBEjJTIWlA8PXwKNQX_FvB7g
 ```
-which will give you three files `void_150.zip`, `void_500.zip`, `void_1500.zip`.
 
-Assuming you are in the root of the repository, to construct the same dataset structure as the setup script above:
+Note: The bash scripts below are now obsolete!
 ```
-mkdir void_release
-unzip -o void_150.zip -d void_release/
-unzip -o void_500.zip -d void_release/
-unzip -o void_1500.zip -d void_release/
-bash bash/setup_dataset_void.sh unpack-only
+bash/setup_dataset_void.sh
+bash/setup_dataset_void_raw.sh
 ```
+
+Assuming you are in the root of the repository, you can download the dataset via commandline using wget.
+To construct the same dataset structure as the setup script above:
+```
+      
+wget -O void_release.zip 'https://yaleedu-my.sharepoint.com/:u:/g/personal/alex_wong_yale_edu/Ebwvk0Ji8HhNinmAcKI5vSkBEjJTIWlA8PXwKNQX_FvB7g?e=0Zqe7g&download=1'
+unzip void_release.zip
+```
+
 If you encounter `error: invalid zip file with overlapped components (possible zip bomb)`. Please do the following
 ```
 export UNZIP_DISABLE_ZIPBOMB_DETECTION=TRUE
