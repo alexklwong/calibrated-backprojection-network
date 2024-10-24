@@ -29,12 +29,14 @@ from net_utils import OutlierRemoval
 
 
 def train(train_image_path,
+          train_pose_path,
           train_sparse_depth_path,
           train_intrinsics_path,
           val_image_path,
           val_sparse_depth_path,
           val_intrinsics_path,
           val_ground_truth_path,
+          pose_in_world_frame = False, 
           # Batch settings
           n_batch=settings.N_BATCH,
           n_height=settings.N_HEIGHT,
@@ -119,12 +121,16 @@ def train(train_image_path,
     Load input paths and set up dataloaders
     '''
     # Read paths for training
+    train_pose_paths = None
+    if not train_pose_path==" ":
+        train_pose_paths = data_utils.read_paths(train_pose_path)
     train_image_paths = data_utils.read_paths(train_image_path)
     train_sparse_depth_paths = data_utils.read_paths(train_sparse_depth_path)
     train_intrinsics_paths = data_utils.read_paths(train_intrinsics_path)
 
     n_train_sample = len(train_image_paths)
-
+    if train_pose_paths is not None:
+        assert len(train_pose_paths) == n_train_sample
     assert len(train_sparse_depth_paths) == n_train_sample
     assert len(train_intrinsics_paths) == n_train_sample
 
@@ -136,6 +142,7 @@ def train(train_image_path,
             image_paths=train_image_paths,
             sparse_depth_paths=train_sparse_depth_paths,
             intrinsics_paths=train_intrinsics_paths,
+            pose_paths=train_pose_paths, 
             shape=(n_height, n_width),
             random_crop_type=augmentation_random_crop_type),
         batch_size=n_batch,
@@ -216,24 +223,25 @@ def train(train_image_path,
     parameters_depth_model = depth_model.parameters()
 
     depth_model.train()
-
-    # Bulid PoseNet (only needed for training) network
-    pose_model = PoseNetModel(
-        encoder_type='resnet18',
-        rotation_parameterization='axis',
-        weight_initializer=weight_initializer,
-        activation_func='relu',
-        device=device)
-
-    parameters_pose_model = pose_model.parameters()
-
-    pose_model.train()
+    parameters_pose_model = None
+    if train_pose_paths is None:
+        # Bulid PoseNet (only needed for training) network
+        pose_model = PoseNetModel(
+            encoder_type='resnet18',
+            rotation_parameterization='axis',
+            weight_initializer=weight_initializer,
+            activation_func='relu',
+            device=device)
+    
+        parameters_pose_model = pose_model.parameters()
+        pose_model.train()
+    
+        if pose_model_restore_path is not None and pose_model_restore_path != '':
+            pose_model.restore_model(pose_model_restore_path)
 
     if depth_model_restore_path is not None and depth_model_restore_path != '':
         depth_model.restore_model(depth_model_restore_path)
 
-    if pose_model_restore_path is not None and pose_model_restore_path != '':
-        pose_model.restore_model(pose_model_restore_path)
 
     # Set up tensorboard summary writers
     train_summary_writer = SummaryWriter(event_path + '-train')
@@ -357,16 +365,25 @@ def train(train_image_path,
     augmentation_schedule_pos = 0
     augmentation_probability = augmentation_probabilities[0]
 
-    optimizer = torch.optim.Adam([
-        {
-            'params' : parameters_depth_model,
-            'weight_decay' : w_weight_decay_depth
-        },
-        {
-            'params' : parameters_pose_model,
-            'weight_decay' : w_weight_decay_pose
-        }],
-        lr=learning_rate)
+    if train_pose_paths is None:
+        optimizer = torch.optim.Adam([
+            {
+                'params' : parameters_depth_model,
+                'weight_decay' : w_weight_decay_depth
+            },
+            {
+                'params' : parameters_pose_model,
+                'weight_decay' : w_weight_decay_pose
+            }],
+            lr=learning_rate)
+    else:
+        optimizer = torch.optim.Adam([
+            {
+                'params' : parameters_depth_model,
+                'weight_decay' : w_weight_decay_depth
+            }
+            ],
+            lr=learning_rate)
 
     # Start training
     train_step = 0
@@ -398,7 +415,10 @@ def train(train_image_path,
                 in_.to(device) for in_ in inputs
             ]
 
-            image0, image1, image2, sparse_depth0, intrinsics = inputs
+            if train_pose_paths is None:
+                image0, image1, image2, sparse_depth0, intrinsics = inputs
+            else:
+                image0, image1, image2, pose0, pose1, pose2, sparse_depth0, intrinsics = inputs
 
             # Validity map is where sparse depth is available
             validity_map_depth0 = torch.where(
@@ -428,8 +448,17 @@ def train(train_image_path,
                 validity_map_depth=filtered_validity_map_depth0,
                 intrinsics=intrinsics)
 
-            pose01 = pose_model.forward(image0, image1)
-            pose02 = pose_model.forward(image0, image2)
+            if train_pose_paths is None:
+                pose01 = pose_model.forward(image0, image1)
+                pose02 = pose_model.forward(image0, image2)
+            else:
+                if pose_in_world_frame:
+                    # Below 3 lines are in case 'absolute pose' is in world frame, and not camera frame. 
+                    pose0 = torch.inverse(pose0)
+                    pose1 = torch.inverse(pose1)
+                    pose2 = torch.inverse(pose2)
+                pose01 = pose1@torch.inverse(pose0)
+                pose02 = pose2@torch.inverse(pose0)
 
             # Compute loss function
             loss, loss_info = depth_model.compute_loss(
@@ -506,16 +535,17 @@ def train(train_image_path,
                 # Save checkpoints
                 depth_model.save_model(
                     depth_model_checkpoint_path.format(train_step), train_step, optimizer)
-
-                pose_model.save_model(
-                    pose_model_checkpoint_path.format(train_step), train_step, optimizer)
+                if train_pose_paths is None:
+                    pose_model.save_model(
+                        pose_model_checkpoint_path.format(train_step), train_step, optimizer)
 
     # Save checkpoints
     depth_model.save_model(
         depth_model_checkpoint_path.format(train_step), train_step, optimizer)
 
-    pose_model.save_model(
-        pose_model_checkpoint_path.format(train_step), train_step, optimizer)
+    if train_pose_paths is None:
+        pose_model.save_model(
+            pose_model_checkpoint_path.format(train_step), train_step, optimizer)
 
 def validate(depth_model,
              dataloader,
@@ -1098,7 +1128,9 @@ def log_network_settings(log_path,
 
     # Computer number of parameters
     n_parameter_depth = sum(p.numel() for p in parameters_depth_model)
-    n_parameter_pose = sum(p.numel() for p in parameters_pose_model)
+    n_parameter_pose = 0
+    if parameters_pose_model is not None:
+        n_parameter_pose = sum(p.numel() for p in parameters_pose_model)
 
     n_parameter = n_parameter_depth + n_parameter_pose
 

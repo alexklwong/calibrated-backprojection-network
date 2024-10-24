@@ -15,9 +15,51 @@ https://arxiv.org/pdf/2108.10531.pdf
 }
 '''
 import numpy as np
+import cv2
 import torch.utils.data
 import data_utils
 
+def load_pose_triplet(path,format='txt'):
+    '''
+    Load and returns 4x4 pose matrices at timt t-1,t, t+1
+    '''
+    pose1=None
+    pose0=None
+    pose2=None
+    if format.lower()=='txt':
+        poses = np.loadtxt(path)
+        if poses.shape[1]==12:
+            poses = poses.reshape(poses.shape[0], poses.shape[1]//4, 4)
+            affine_row = np.asarray([0,0,0,1], dtype=poses.dtype)
+
+            pose1 = poses[0,:,:].copy()
+            pose1 = np.asarray(pose1, dtype=np.float32)
+            pose1 = np.vstack((pose1, affine_row))
+            pose0 = poses[1,:,:].copy()
+            pose0 = np.asarray(pose0, dtype=np.float32)
+            pose0 = np.vstack((pose0, affine_row))
+            pose2 = poses[2,:,:].copy()
+            pose2 = np.asarray(pose2, dtype=np.float32)
+            pose2 = np.vstack((pose2, affine_row))
+        elif poses.shape[1]==16:
+            poses = poses.reshape(poses.shape[0], poses.shape[1]//4, 4)
+            pose1 = poses[0,:,:].copy()
+            pose0 = poses[1,:,:].copy()
+            pose2 = poses[2,:,:].copy()
+
+
+    elif format.lower()=='cv_yml':
+        s = cv2.FileStorage()
+        _ = s.open(path, cv2.FileStorage_READ)
+        pnode = s.getNode('Poses')
+        poses = pnode.mat()
+        poses = poses.reshape(poses.shape[0], poses.shape[1]//4, 4)
+        if poses.shape[1]==4 and poses.shape[2]==4:
+            pose1 = poses[0,:,:].copy()
+            pose0 = poses[1,:,:].copy()
+            pose2 = poses[2,:,:].copy()
+               
+    return pose1, pose0, pose2
 
 def load_image_triplet(path, normalize=True):
     '''
@@ -182,10 +224,12 @@ class KBNetTrainingDataset(torch.utils.data.Dataset):
                  image_paths,
                  sparse_depth_paths,
                  intrinsics_paths,
+		         pose_paths=None, 
                  shape=None,
                  random_crop_type=['none']):
 
         self.image_paths = image_paths
+        self.pose_paths = pose_paths
         self.sparse_depth_paths = sparse_depth_paths
         self.intrinsics_paths = intrinsics_paths
 
@@ -222,8 +266,12 @@ class KBNetTrainingDataset(torch.utils.data.Dataset):
             for T in [image0, image1, image2, sparse_depth0, intrinsics]
         ]
 
-        return image0, image1, image2, sparse_depth0, intrinsics
-
+        if self.pose_paths is None:
+            return image0, image1, image2, sparse_depth0, intrinsics
+        else:
+            pose1, pose0, pose2 = load_pose_triplet(self.pose_paths[index])
+            return image0, image1, image2, pose0, pose1, pose2, sparse_depth0, intrinsics
+    
     def __len__(self):
         return len(self.image_paths)
 
